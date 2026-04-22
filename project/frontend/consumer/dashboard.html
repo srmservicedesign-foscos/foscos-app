@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Complaints | FoSCoS Grievance Portal</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="brand">
+        <span class="logo">F</span>
+        <span>FoSCoS Grievance Portal</span>
+      </div>
+      <nav>
+        <a href="index.html">Home</a>
+      </nav>
+    </header>
+
+    <main class="container">
+      <h1 class="page-title">Consumer Dashboard</h1>
+
+      <!-- Login step -->
+      <section id="loginStep">
+        <div class="card">
+          <h3>Login</h3>
+          <p class="muted">
+            Enter your phone number. We'll send an OTP to verify.
+          </p>
+          <label class="label" for="loginPhone">Phone number</label>
+          <input id="loginPhone" class="input" type="tel" />
+          <button id="sendOtpBtn" class="btn block" style="margin-top: 12px">
+            Send OTP
+          </button>
+        </div>
+      </section>
+
+      <!-- OTP step -->
+      <section id="otpStep" class="hidden">
+        <div class="card">
+          <h3>Enter OTP</h3>
+          <p class="muted">
+            OTP sent to <span id="otpPhoneLabel"></span>.
+          </p>
+          <div class="otp-boxes" id="otpBoxes">
+            <input type="text" inputmode="numeric" maxlength="1" />
+            <input type="text" inputmode="numeric" maxlength="1" />
+            <input type="text" inputmode="numeric" maxlength="1" />
+            <input type="text" inputmode="numeric" maxlength="1" />
+            <input type="text" inputmode="numeric" maxlength="1" />
+            <input type="text" inputmode="numeric" maxlength="1" />
+          </div>
+          <button id="verifyBtn" class="btn block">Verify OTP</button>
+        </div>
+      </section>
+
+      <!-- Dashboard content -->
+      <section id="dashboardStep" class="hidden">
+        <div class="notice">
+          🔔 FSO may contact you for verification of submitted complaints.
+        </div>
+
+        <h3 style="color: var(--green-dark); margin-top: 18px">
+          My Complaints
+        </h3>
+        <div id="complaintList"></div>
+      </section>
+    </main>
+
+    <script src="/static/script.js"></script>
+    <script>
+      qs("#sendOtpBtn").addEventListener("click", () => {
+        const phone = qs("#loginPhone").value.trim();
+        if (!/^\+?\d{10,13}$/.test(phone.replace(/\s|-/g, ""))) {
+          alert("Please enter a valid phone number.");
+          return;
+        }
+        qs("#otpPhoneLabel").textContent = phone;
+        qs("#loginStep").classList.add("hidden");
+        qs("#otpStep").classList.remove("hidden");
+      });
+
+      wireOtpBoxes("#otpBoxes");
+
+      qs("#verifyBtn").addEventListener("click", () => {
+        const code = getOtpValue("#otpBoxes");
+        if (code.length !== 6) {
+          alert("Please enter all 6 digits.");
+          return;
+        }
+        qs("#otpStep").classList.add("hidden");
+        qs("#dashboardStep").classList.remove("hidden");
+        renderComplaints();
+      });
+
+      function renderComplaints() {
+        const user = Store.get("userComplaints", []);
+        const all = [...user, ...MOCK_COMPLAINTS];
+        const listEl = qs("#complaintList");
+        if (!all.length) {
+          listEl.innerHTML = `<div class="card"><p class="muted">No complaints yet.</p></div>`;
+          return;
+        }
+        listEl.innerHTML = all
+          .map(
+            (c) => `
+            <div class="card">
+              <div class="card-row">
+                <div>
+                  <h3>${c.restaurant}</h3>
+                  <div class="meta">Filed: ${c.date}</div>
+                  <div class="meta">${c.comment || ""}</div>
+                </div>
+                <div style="text-align:right">
+                  <div class="rating-badge">${c.rating.toFixed(1)} / 5</div>
+                  <div style="margin-top:6px">${statusChip(c.status)}</div>
+                </div>
+              </div>
+              <div style="margin-top:10px">
+                <a href="track.html?id=${c.id}" class="btn small">Track</a>
+              </div>
+            </div>`
+          )
+          .join("");
+      }
+    </script>
+  </body>
+</html>

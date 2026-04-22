@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FBO Dashboard | FoSCoS Grievance Portal</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="brand">
+        <span class="logo">F</span>
+        <span>FBO Dashboard</span>
+      </div>
+      <nav>
+        <a href="/consumer/index.html">Consumer Site</a>
+      </nav>
+    </header>
+
+    <main class="container">
+      <h1 class="page-title">Customer Feedback</h1>
+      <p class="subtitle">
+        Review feedback from verified customers. Consumer identity is kept
+        confidential.
+      </p>
+
+      <div class="notice">
+        🔒 Consumer names and phone numbers are not shared with FBOs.
+      </div>
+
+      <div id="feedbackList"></div>
+    </main>
+
+    <template id="resolveTemplate">
+      <div class="card" style="background: var(--green-soft)">
+        <h4 style="margin: 0 0 8px; color: var(--green-dark)">
+          Mark as Resolved
+        </h4>
+        <label class="label">Improvement note</label>
+        <textarea class="textarea note-input"></textarea>
+        <div style="margin-top: 8px; display: flex; gap: 8px">
+          <button class="btn small submit-resolve">Submit</button>
+          <button class="btn small secondary cancel-resolve">Cancel</button>
+        </div>
+      </div>
+    </template>
+
+    <script src="/static/script.js"></script>
+    <script>
+      const FBO_FEEDBACK = [
+        {
+          id: "F001",
+          rating: 4.6,
+          comment: "Loved the food and hygiene.",
+          images: [],
+          type: "good",
+        },
+        {
+          id: "F002",
+          rating: 1.6,
+          comment: "Floor was dirty near the kitchen entrance.",
+          images: ["evidence_01.jpg", "bill_01.jpg"],
+          type: "bad",
+        },
+        {
+          id: "F003",
+          rating: 2.3,
+          comment: "Food tasted stale, not fresh.",
+          images: ["evidence_02.jpg"],
+          type: "bad",
+        },
+        {
+          id: "F004",
+          rating: 4.3,
+          comment: "Service was quick and staff was polite.",
+          images: [],
+          type: "good",
+        },
+      ];
+
+      function feedbackCard(f) {
+        const imagesHtml = f.images.length
+          ? f.images
+              .map((img) => `<span class="image-thumb">${img}</span>`)
+              .join("")
+          : '<span class="muted">No images</span>';
+
+        const actionsHtml =
+          f.type === "good"
+            ? `<button class="btn small thank-btn">Send Thank You</button>`
+            : `<button class="btn small warning resolve-btn">Mark as Resolved</button>
+               <button class="btn small secondary flag-btn">Flag as Incorrect</button>`;
+
+        return `
+          <div class="card" data-id="${f.id}">
+            <div class="card-row">
+              <div>
+                <span class="stars">${renderStars(f.rating)}</span>
+                <span class="rating-badge" style="margin-left: 6px">
+                  ${f.rating.toFixed(1)} / 5
+                </span>
+              </div>
+              <span class="tag">${f.type === "good" ? "Positive" : "Concern"}</span>
+            </div>
+            <p style="margin: 10px 0">${f.comment}</p>
+            <div style="margin-bottom: 10px">${imagesHtml}</div>
+            <div class="flex" style="flex-wrap: wrap">${actionsHtml}</div>
+            <div class="resolve-slot"></div>
+          </div>`;
+      }
+
+      const listEl = qs("#feedbackList");
+      listEl.innerHTML = FBO_FEEDBACK.map(feedbackCard).join("");
+
+      listEl.addEventListener("click", (e) => {
+        const card = e.target.closest(".card");
+        if (!card) return;
+
+        if (e.target.classList.contains("thank-btn")) {
+          alert("Thank-you note sent to customer.");
+          e.target.disabled = true;
+          e.target.textContent = "✓ Thank You Sent";
+        }
+
+        if (e.target.classList.contains("flag-btn")) {
+          if (confirm("Flag this feedback as incorrect?")) {
+            card.style.opacity = "0.6";
+            card.querySelector(".card-row").insertAdjacentHTML(
+              "beforeend",
+              '<span class="chip flag">Flagged</span>'
+            );
+            e.target.disabled = true;
+          }
+        }
+
+        if (e.target.classList.contains("resolve-btn")) {
+          const tpl = qs("#resolveTemplate").content.cloneNode(true);
+          card.querySelector(".resolve-slot").replaceChildren(tpl);
+        }
+
+        if (e.target.classList.contains("cancel-resolve")) {
+          card.querySelector(".resolve-slot").replaceChildren();
+        }
+
+        if (e.target.classList.contains("submit-resolve")) {
+          const note = card.querySelector(".note-input").value.trim();
+          if (!note) {
+            alert("Please add an improvement note.");
+            return;
+          }
+          card.querySelector(".resolve-slot").innerHTML =
+            `<p class="muted" style="margin-top:8px">
+               ✓ Resolved. Note: "${note}"
+             </p>`;
+          card
+            .querySelectorAll(".resolve-btn, .flag-btn")
+            .forEach((b) => (b.disabled = true));
+        }
+      });
+    </script>
+  </body>
+</html>

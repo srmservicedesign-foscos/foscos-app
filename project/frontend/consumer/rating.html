@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rate Restaurant | FoSCoS Grievance Portal</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="brand">
+        <span class="logo">F</span>
+        <span>FoSCoS Grievance Portal</span>
+      </div>
+      <nav>
+        <a href="index.html">Home</a>
+      </nav>
+    </header>
+
+    <main class="container">
+      <!-- Step 1: Rating form -->
+      <section id="rateStep">
+        <div class="card">
+          <h3 id="rName">Restaurant Name</h3>
+          <div class="meta" id="rLicense">License: --</div>
+        </div>
+
+        <div class="card">
+          <h3>Rate the restaurant</h3>
+          <p class="muted">Move each slider to reflect your experience.</p>
+
+          <div class="slider-row">
+            <label for="s1">Premise Cleanliness</label>
+            <input type="range" id="s1" min="1" max="5" value="3" />
+            <div class="slider-options">
+              <span>Very Poor</span><span>Poor</span><span>Okay</span
+              ><span>Good</span><span>Excellent</span>
+            </div>
+            <div class="slider-selection" id="s1label">Okay (3)</div>
+          </div>
+
+          <div class="slider-row">
+            <label for="s2">Food Freshness</label>
+            <input type="range" id="s2" min="1" max="5" value="3" />
+            <div class="slider-options">
+              <span>Very Poor</span><span>Poor</span><span>Okay</span
+              ><span>Good</span><span>Excellent</span>
+            </div>
+            <div class="slider-selection" id="s2label">Okay (3)</div>
+          </div>
+
+          <div class="slider-row">
+            <label for="s3">Staff Hygiene</label>
+            <input type="range" id="s3" min="1" max="5" value="3" />
+            <div class="slider-options">
+              <span>Very Poor</span><span>Poor</span><span>Okay</span
+              ><span>Good</span><span>Excellent</span>
+            </div>
+            <div class="slider-selection" id="s3label">Okay (3)</div>
+          </div>
+
+          <div class="avg-box">
+            <div class="muted">Average Rating</div>
+            <div class="avg-num" id="avgNum">3.0</div>
+            <div class="stars" id="avgStars">★★★☆☆</div>
+          </div>
+        </div>
+
+        <!-- Conditional: bad rating -> mandatory evidence -->
+        <div class="card" id="badBlock">
+          <h3>Evidence required</h3>
+          <p class="muted">
+            Since one or more ratings are below "Okay", please share evidence so
+            we can investigate.
+          </p>
+
+          <label class="label" for="evidenceImg">
+            Upload evidence photo <span style="color: var(--danger)">*</span>
+          </label>
+          <input id="evidenceImg" type="file" accept="image/*" class="input" />
+
+          <label class="label" for="billImg">
+            Upload bill photo <span style="color: var(--danger)">*</span>
+          </label>
+          <input id="billImg" type="file" accept="image/*" class="input" />
+
+          <label class="label" for="badName">
+            Your name <span style="color: var(--danger)">*</span>
+          </label>
+          <input id="badName" class="input" type="text" />
+
+          <label class="label" for="badPhone">
+            Phone number <span style="color: var(--danger)">*</span>
+          </label>
+          <input id="badPhone" class="input" type="tel" />
+        </div>
+
+        <!-- Conditional: good rating -> optional details -->
+        <div class="card" id="goodBlock">
+          <h3>Anything to add?</h3>
+          <label class="label" for="goodComment">Comment (optional)</label>
+          <textarea id="goodComment" class="textarea"></textarea>
+
+          <label class="label" for="goodName">Your name</label>
+          <input id="goodName" class="input" type="text" />
+
+          <label class="label" for="goodPhone">Phone number</label>
+          <input id="goodPhone" class="input" type="tel" />
+        </div>
+
+        <button id="continueBtn" class="btn block">Continue</button>
+      </section>
+
+      <!-- Step 2: OTP -->
+      <section id="otpStep" class="hidden">
+        <div class="card">
+          <h3>Verify your phone</h3>
+          <p class="muted">
+            Enter the 6-digit code sent to
+            <span id="otpPhone"></span>.
+          </p>
+          <div class="otp-boxes" id="otpBoxes">
+            <input type="text" inputmode="numeric" maxlength="1" />
+            <input type="text" inputmode="numeric" maxlength="1" />
+            <input type="text" inputmode="numeric" maxlength="1" />
+            <input type="text" inputmode="numeric" maxlength="1" />
+            <input type="text" inputmode="numeric" maxlength="1" />
+            <input type="text" inputmode="numeric" maxlength="1" />
+          </div>
+          <button id="verifyOtpBtn" class="btn block">Verify OTP</button>
+          <p class="muted" style="text-align: center; margin-top: 8px">
+            Didn't receive code? <a href="#">Resend</a>
+          </p>
+        </div>
+      </section>
+
+      <!-- Step 3: Confirmation -->
+      <section id="doneStep" class="hidden">
+        <div class="card success-screen">
+          <div class="icon">✓</div>
+          <h3>Your feedback has been submitted</h3>
+          <p class="muted">
+            Thank you for helping us keep food safe. Our FSO team may contact
+            you for verification.
+          </p>
+          <div style="margin-top: 14px; display: flex; gap: 10px; justify-content: center;">
+            <a href="track.html" class="btn">Track Complaint</a>
+            <a href="index.html" class="btn secondary">Back to Home</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="/static/script.js"></script>
+    <script>
+      const restaurant =
+        Store.get("selectedRestaurant") || {
+          name: "Unknown Restaurant",
+          license: "N/A",
+        };
+      qs("#rName").textContent = restaurant.name;
+      qs("#rLicense").textContent = `License: ${restaurant.license}`;
+
+      const sliders = [qs("#s1"), qs("#s2"), qs("#s3")];
+      const labels = [qs("#s1label"), qs("#s2label"), qs("#s3label")];
+      const avgNum = qs("#avgNum");
+      const avgStars = qs("#avgStars");
+      const badBlock = qs("#badBlock");
+      const goodBlock = qs("#goodBlock");
+
+      function updateRatings() {
+        const values = sliders.map((s) => parseInt(s.value));
+        values.forEach((v, i) => {
+          labels[i].textContent = `${RATING_LABELS[v - 1]} (${v})`;
+        });
+        const avg = values.reduce((a, b) => a + b, 0) / values.length;
+        avgNum.textContent = avg.toFixed(1);
+        avgStars.textContent = renderStars(avg);
+
+        const hasBad = values.some((v) => v < 3);
+        if (hasBad) {
+          badBlock.classList.remove("hidden");
+          goodBlock.classList.add("hidden");
+        } else {
+          badBlock.classList.add("hidden");
+          goodBlock.classList.remove("hidden");
+        }
+      }
+      sliders.forEach((s) => s.addEventListener("input", updateRatings));
+      updateRatings();
+
+      qs("#continueBtn").addEventListener("click", () => {
+        const values = sliders.map((s) => parseInt(s.value));
+        const hasBad = values.some((v) => v < 3);
+        let name, phone;
+
+        if (hasBad) {
+          const evidence = qs("#evidenceImg").files.length;
+          const bill = qs("#billImg").files.length;
+          name = qs("#badName").value.trim();
+          phone = qs("#badPhone").value.trim();
+          if (!evidence || !bill) {
+            alert("Please upload both evidence and bill photos.");
+            return;
+          }
+          if (!name || !phone) {
+            alert("Please enter your name and phone number.");
+            return;
+          }
+        } else {
+          name = qs("#goodName").value.trim();
+          phone = qs("#goodPhone").value.trim();
+          if (!phone) {
+            alert("Please enter your phone number.");
+            return;
+          }
+        }
+
+        if (!/^\+?\d{10,13}$/.test(phone.replace(/\s|-/g, ""))) {
+          alert("Please enter a valid phone number.");
+          return;
+        }
+
+        Store.set("ratingSubmission", {
+          restaurant,
+          ratings: {
+            premise_cleanliness: values[0],
+            food_freshness: values[1],
+            staff_hygiene: values[2],
+          },
+          average: parseFloat(avgNum.textContent),
+          name,
+          phone,
+          hasBad,
+        });
+
+        qs("#otpPhone").textContent = phone;
+        qs("#rateStep").classList.add("hidden");
+        qs("#otpStep").classList.remove("hidden");
+      });
+
+      wireOtpBoxes("#otpBoxes");
+      qs("#verifyOtpBtn").addEventListener("click", () => {
+        const code = getOtpValue("#otpBoxes");
+        if (code.length !== 6) {
+          alert("Please enter all 6 digits.");
+          return;
+        }
+        // UI-only: accept any 6-digit code
+        qs("#otpStep").classList.add("hidden");
+        qs("#doneStep").classList.remove("hidden");
+
+        // Save into local "complaints" list so dashboard can show it.
+        const submission = Store.get("ratingSubmission");
+        const existing = Store.get("userComplaints", []);
+        existing.unshift({
+          id: "C" + Math.floor(900 + Math.random() * 99),
+          restaurant: submission.restaurant.name,
+          rating: submission.average,
+          status: "Pending",
+          date: new Date().toISOString().slice(0, 10),
+          comment: submission.hasBad
+            ? "Evidence uploaded for investigation."
+            : qs("#goodComment")?.value || "",
+        });
+        Store.set("userComplaints", existing);
+      });
+    </script>
+  </body>
+</html>

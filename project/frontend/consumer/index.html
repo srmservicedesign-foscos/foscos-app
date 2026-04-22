@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Report Food Safety Issue | FoSCoS Grievance Portal</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="brand">
+        <span class="logo">F</span>
+        <span>FoSCoS Grievance Portal</span>
+      </div>
+      <nav>
+        <a href="dashboard.html">My Complaints</a>
+      </nav>
+    </header>
+
+    <main class="container">
+      <h1 class="page-title">Report Food Safety Issue</h1>
+      <p class="subtitle">
+        Scan or select the restaurant you visited to share your feedback.
+      </p>
+
+      <div class="searchbar">
+        <input
+          id="searchInput"
+          class="input"
+          type="text"
+          placeholder="Search by restaurant name or license number"
+        />
+      </div>
+
+      <section id="nearbySection">
+        <h3 style="color: var(--green-dark)">Nearby Restaurants</h3>
+        <div id="restaurantList"></div>
+      </section>
+
+      <section id="notFoundSection" class="hidden">
+        <div class="card">
+          <h3>No matching restaurant found</h3>
+          <p class="muted">
+            Couldn't find the place you visited? You can still report an
+            unregistered business.
+          </p>
+          <button id="openUnregBtn" class="btn">
+            Report Unregistered Business
+          </button>
+        </div>
+      </section>
+
+      <section id="unregFormSection" class="hidden">
+        <div class="card">
+          <h3>Report Unregistered Business</h3>
+          <label class="label" for="unregName">Restaurant name</label>
+          <input id="unregName" class="input" type="text" />
+
+          <label class="label" for="unregLocation">Location</label>
+          <input id="unregLocation" class="input" type="text" />
+
+          <label class="label" for="unregImages">Upload images</label>
+          <input id="unregImages" class="input" type="file" multiple />
+
+          <label class="label" for="unregComments">Comments</label>
+          <textarea id="unregComments" class="textarea"></textarea>
+
+          <div style="margin-top: 14px; display: flex; gap: 10px">
+            <button id="unregSubmit" class="btn">Submit</button>
+            <button id="unregCancel" class="btn secondary">Cancel</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="publicViewSection" class="hidden">
+        <div class="card">
+          <div class="flex-between">
+            <div>
+              <h3 id="pvName"></h3>
+              <div class="meta" id="pvLicense"></div>
+            </div>
+            <span class="rating-badge" id="pvRating"></span>
+          </div>
+          <div style="margin-top: 10px">
+            <span class="stars" id="pvStars"></span>
+          </div>
+
+          <h4 style="margin-top: 16px; color: var(--green-dark)">
+            Public Comments
+          </h4>
+          <ul id="pvComments" style="padding-left: 18px"></ul>
+
+          <div style="margin-top: 14px; display: flex; gap: 10px">
+            <button id="pvRateBtn" class="btn">Rate this restaurant</button>
+            <button id="pvBackBtn" class="btn secondary">Back</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="/static/script.js"></script>
+    <script>
+      const listEl = qs("#restaurantList");
+      const searchEl = qs("#searchInput");
+      const notFoundEl = qs("#notFoundSection");
+      const unregFormEl = qs("#unregFormSection");
+      const publicViewEl = qs("#publicViewSection");
+      const nearbyEl = qs("#nearbySection");
+
+      function renderRestaurants(list) {
+        if (!list.length) {
+          listEl.innerHTML = "";
+          notFoundEl.classList.remove("hidden");
+          return;
+        }
+        notFoundEl.classList.add("hidden");
+        listEl.innerHTML = list
+          .map(
+            (r) => `
+            <div class="card" data-id="${r.id}" style="cursor:pointer">
+              <div class="card-row">
+                <div>
+                  <h3>${r.name}</h3>
+                  <div class="meta">${r.location}</div>
+                  <div class="meta">License: ${r.license}</div>
+                </div>
+                <div style="text-align:right">
+                  <span class="stars">${renderStars(r.rating)}</span>
+                  <div class="rating-badge">${r.rating.toFixed(1)} / 5</div>
+                </div>
+              </div>
+            </div>`
+          )
+          .join("");
+
+        qsa("#restaurantList .card").forEach((card) => {
+          card.addEventListener("click", () => {
+            const id = card.dataset.id;
+            const r = MOCK_RESTAURANTS.find((x) => x.id === id);
+            showPublicView(r);
+          });
+        });
+      }
+
+      function showPublicView(r) {
+        nearbyEl.classList.add("hidden");
+        notFoundEl.classList.add("hidden");
+        publicViewEl.classList.remove("hidden");
+        qs("#pvName").textContent = r.name;
+        qs("#pvLicense").textContent = `License: ${r.license}`;
+        qs("#pvRating").textContent = `${r.rating.toFixed(1)} / 5`;
+        qs("#pvStars").textContent = renderStars(r.rating);
+        qs("#pvComments").innerHTML = r.comments
+          .map(
+            (c) =>
+              `<li><span class="tag">${
+                c.type === "good" ? "Positive" : "Concern"
+              }</span> ${c.text}</li>`
+          )
+          .join("");
+        qs("#pvRateBtn").onclick = () => {
+          Store.set("selectedRestaurant", r);
+          window.location.href = "rating.html";
+        };
+        qs("#pvBackBtn").onclick = () => {
+          publicViewEl.classList.add("hidden");
+          nearbyEl.classList.remove("hidden");
+        };
+      }
+
+      function filterRestaurants(q) {
+        const lower = q.trim().toLowerCase();
+        if (!lower) return MOCK_RESTAURANTS;
+        return MOCK_RESTAURANTS.filter(
+          (r) =>
+            r.name.toLowerCase().includes(lower) ||
+            r.license.toLowerCase().includes(lower)
+        );
+      }
+
+      searchEl.addEventListener("input", (e) => {
+        renderRestaurants(filterRestaurants(e.target.value));
+      });
+
+      qs("#openUnregBtn").addEventListener("click", () => {
+        notFoundEl.classList.add("hidden");
+        unregFormEl.classList.remove("hidden");
+      });
+
+      qs("#unregCancel").addEventListener("click", () => {
+        unregFormEl.classList.add("hidden");
+        nearbyEl.classList.remove("hidden");
+        searchEl.value = "";
+        renderRestaurants(MOCK_RESTAURANTS);
+      });
+
+      qs("#unregSubmit").addEventListener("click", () => {
+        const name = qs("#unregName").value.trim();
+        const location = qs("#unregLocation").value.trim();
+        if (!name || !location) {
+          alert("Please enter restaurant name and location.");
+          return;
+        }
+        alert("Unregistered business report submitted. Reference #U001");
+        unregFormEl.classList.add("hidden");
+        nearbyEl.classList.remove("hidden");
+      });
+
+      renderRestaurants(MOCK_RESTAURANTS);
+    </script>
+  </body>
+</html>
