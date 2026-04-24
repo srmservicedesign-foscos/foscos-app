@@ -72,102 +72,145 @@ function icon(name, cls = "") {
   return `<span class="icon ${cls}">${e}</span>`;
 }
 
+/* ---------- Shillong areas (used by the area filter) ---------- */
+const SHILLONG_AREAS = [
+  "Police Bazar",
+  "Laitumkhrah",
+  "Shillong Cantonment",
+  "Shillong Peak",
+  "Ward's Lake",
+  "Golf Links",
+  "Mawlai",
+  "Nongthymmai",
+  "Upper Shillong",
+  "Bara Bazar",
+];
+
 /* ---------- Mock data (fallback when Firestore not configured) ---------- */
 const MOCK_RESTAURANTS = [
   {
     id: "R001",
-    name: "Green Leaf Restaurant",
-    location: "MG Road, Bengaluru",
-    license: "10012345000123",
-    rating: 4.3,
-    cuisine: "Vegetarian · Indian",
+    name: "Cafe Shillong",
+    location: "Laitumkhrah, Shillong",
+    area: "Laitumkhrah",
+    license: "10112345600123",
+    rating: 4.4,
+    cuisine: "Continental · Khasi",
     comments: [
-      { text: "Excellent hygiene and polite staff.", type: "good", status: "approved" },
-      { text: "Found a hair in my food once.", type: "bad", status: "approved" },
-      { text: "Loved the fresh salad.", type: "good", status: "approved" },
+      { text: "Cozy place, clean kitchen.", type: "good", status: "approved" },
+      { text: "Long wait on Sunday afternoons.", type: "bad", status: "approved" },
     ],
   },
   {
     id: "R002",
-    name: "Spice Junction",
-    location: "Park Street, Kolkata",
-    license: "10012345000456",
-    rating: 3.8,
-    cuisine: "Bengali · Chinese",
+    name: "Trattoria",
+    location: "Police Bazar, Shillong",
+    area: "Police Bazar",
+    license: "10112345600456",
+    rating: 4.1,
+    cuisine: "Khasi · Indian",
     comments: [
-      { text: "Tasty food, but slow service.", type: "good", status: "approved" },
-      { text: "Floor was a bit sticky.", type: "bad", status: "approved" },
+      { text: "Authentic pork dishes.", type: "good", status: "approved" },
+      { text: "Service was slow.", type: "bad", status: "approved" },
     ],
   },
   {
     id: "R003",
-    name: "Tandoor House",
-    location: "Connaught Place, New Delhi",
-    license: "10012345000789",
-    rating: 4.6,
-    cuisine: "North Indian · Mughlai",
+    name: "Dylan's Cafe",
+    location: "Laitumkhrah, Shillong",
+    area: "Laitumkhrah",
+    license: "10112345600789",
+    rating: 4.5,
+    cuisine: "Cafe · Continental",
     comments: [
-      { text: "Best kebabs in town.", type: "good", status: "approved" },
-      { text: "Kitchen looked dirty through the window.", type: "bad", status: "approved" },
+      { text: "Loved the ambience.", type: "good", status: "approved" },
     ],
   },
   {
     id: "R004",
-    name: "Coastal Catch",
-    location: "Marine Drive, Mumbai",
-    license: "10012345000991",
-    rating: 4.1,
-    cuisine: "Seafood",
+    name: "ML05 Cafe",
+    location: "Golf Links, Shillong",
+    area: "Golf Links",
+    license: "10112345600991",
+    rating: 4.2,
+    cuisine: "Fusion",
     comments: [
-      { text: "Very fresh fish.", type: "good", status: "approved" },
-      { text: "A bit pricey but clean.", type: "good", status: "approved" },
+      { text: "Good coffee and sandwiches.", type: "good", status: "approved" },
     ],
   },
   {
     id: "R005",
-    name: "South Express",
-    location: "T. Nagar, Chennai",
-    license: "10012345001122",
-    rating: 3.2,
-    cuisine: "South Indian",
+    name: "City Hut Dhaba",
+    location: "Bara Bazar, Shillong",
+    area: "Bara Bazar",
+    license: "10112345601122",
+    rating: 3.4,
+    cuisine: "North Indian · Dhaba",
     comments: [
       { text: "Staff weren't wearing gloves.", type: "bad", status: "approved" },
-      { text: "Dosa was crisp and tasty.", type: "good", status: "approved" },
+      { text: "Food tastes good.", type: "good", status: "approved" },
     ],
   },
   {
     id: "R006",
-    name: "Urban Bites Cafe",
-    location: "Banjara Hills, Hyderabad",
-    license: "10012345001345",
-    rating: 4.4,
+    name: "Jadoh Stall",
+    location: "Mawlai, Shillong",
+    area: "Mawlai",
+    license: "10112345601345",
+    rating: 4.0,
+    cuisine: "Khasi",
+    comments: [
+      { text: "Traditional taste, small place.", type: "good", status: "approved" },
+    ],
+  },
+  {
+    id: "R007",
+    name: "Cloud 9 Rooftop",
+    location: "Shillong Peak, Shillong",
+    area: "Shillong Peak",
+    license: "10112345601678",
+    rating: 4.3,
     cuisine: "Continental",
-    comments: [{ text: "Great ambience and service.", type: "good", status: "approved" }],
+    comments: [
+      { text: "View is worth it.", type: "good", status: "approved" },
+    ],
+  },
+  {
+    id: "R008",
+    name: "Lakeside Kitchen",
+    location: "Ward's Lake, Shillong",
+    area: "Ward's Lake",
+    license: "10112345601809",
+    rating: 4.1,
+    cuisine: "Multi-cuisine",
+    comments: [
+      { text: "Fresh salads, clean place.", type: "good", status: "approved" },
+    ],
   },
 ];
 
 const MOCK_COMPLAINTS = [
   {
-    id: "C001",
-    restaurant: "Green Leaf Restaurant",
+    id: "GRV-2026-10001",
+    restaurant: "Cafe Shillong",
     rating: 2.0,
     status: "Under Review",
     date: "2026-04-10",
     comment: "Stale vegetables in salad.",
   },
   {
-    id: "C002",
-    restaurant: "Spice Junction",
+    id: "GRV-2026-10002",
+    restaurant: "Trattoria",
     rating: 4.3,
     status: "Action Taken",
     date: "2026-03-28",
     comment: "Great hygiene, small billing issue.",
   },
   {
-    id: "C003",
-    restaurant: "Tandoor House",
+    id: "GRV-2026-10003",
+    restaurant: "City Hut Dhaba",
     rating: 1.6,
-    status: "Pending",
+    status: "Submitted",
     date: "2026-04-18",
     comment: "Dirty kitchen visible from window.",
   },
@@ -175,62 +218,71 @@ const MOCK_COMPLAINTS = [
 
 const RATING_LABELS = ["Very Poor", "Poor", "Okay", "Good", "Excellent"];
 
-/* ---------- Find-an-Officer mock data (keyed by PIN prefix) ---------- */
+/* ---------- Find-an-Officer mock data (Shillong, Meghalaya) ---------- */
 const OFFICERS = [
   {
-    prefix: "560",
-    name: "Ms. Anjali Nair",
+    prefix: "793001",
+    name: "Mr. Banshan Lyngdoh",
     designation: "Food Safety Officer",
-    contact: "+91-80-2234-5678",
-    office: "FSSAI Regional Office, Bengaluru",
-    jurisdiction: "Bengaluru Urban (560xxx)",
+    contact: "+91-364-222-1111",
+    office: "FSSAI Regional Office, Police Bazar, Shillong",
+    jurisdiction: "Shillong — Police Bazar & Central Zone (793001)",
   },
   {
-    prefix: "400",
-    name: "Mr. Rohan Desai",
+    prefix: "793003",
+    name: "Ms. Ibahunlang Kharbani",
     designation: "Food Safety Officer",
-    contact: "+91-22-2765-4321",
-    office: "FSSAI Regional Office, Mumbai",
-    jurisdiction: "Greater Mumbai (400xxx)",
+    contact: "+91-364-222-2222",
+    office: "FSSAI Regional Office, Laitumkhrah, Shillong",
+    jurisdiction: "Shillong — Laitumkhrah & Golf Links (793003)",
   },
   {
-    prefix: "110",
-    name: "Ms. Priya Sharma",
+    prefix: "793004",
+    name: "Mr. Iaienbor Marwein",
     designation: "Food Safety Officer",
-    contact: "+91-11-2345-6789",
-    office: "FSSAI Regional Office, New Delhi",
-    jurisdiction: "New Delhi District (110xxx)",
+    contact: "+91-364-222-3333",
+    office: "FSSAI Regional Office, Nongthymmai, Shillong",
+    jurisdiction: "Shillong — Nongthymmai & Upper Shillong (793004)",
   },
   {
-    prefix: "600",
-    name: "Mr. Karthik Iyer",
+    prefix: "793006",
+    name: "Ms. Wanphai Syiem",
     designation: "Food Safety Officer",
-    contact: "+91-44-2456-7890",
-    office: "FSSAI Regional Office, Chennai",
-    jurisdiction: "Chennai Metropolitan (600xxx)",
+    contact: "+91-364-222-4444",
+    office: "FSSAI Regional Office, Mawlai, Shillong",
+    jurisdiction: "Shillong — Mawlai & Cantonment (793006)",
   },
   {
-    prefix: "700",
-    name: "Ms. Sanchita Roy",
+    prefix: "793",
+    name: "Mr. Kyrsoibor Pyrtuh",
     designation: "Food Safety Officer",
-    contact: "+91-33-2456-3456",
-    office: "FSSAI Regional Office, Kolkata",
-    jurisdiction: "Kolkata (700xxx)",
-  },
-  {
-    prefix: "500",
-    name: "Mr. Arjun Reddy",
-    designation: "Food Safety Officer",
-    contact: "+91-40-2345-6712",
-    office: "FSSAI Regional Office, Hyderabad",
-    jurisdiction: "Hyderabad (500xxx)",
+    contact: "+91-364-222-5555",
+    office: "FSSAI State Office, Shillong, Meghalaya",
+    jurisdiction: "East Khasi Hills District (793xxx)",
   },
 ];
+
+const DEFAULT_OFFICER = OFFICERS[OFFICERS.length - 1];
 
 function findOfficerByPin(pin) {
   const p = String(pin || "").trim();
   if (!/^\d{6}$/.test(p)) return null;
-  return OFFICERS.find((o) => p.startsWith(o.prefix)) || OFFICERS[0];
+  const exact = OFFICERS.find((o) => p === o.prefix);
+  if (exact) return exact;
+  const byPrefix = OFFICERS.find(
+    (o) => o.prefix.length >= 3 && p.startsWith(o.prefix)
+  );
+  return byPrefix || DEFAULT_OFFICER;
+}
+
+function findOfficerByArea(area) {
+  const a = String(area || "").toLowerCase();
+  if (!a) return DEFAULT_OFFICER;
+  if (a.includes("laitumkhrah") || a.includes("golf")) return OFFICERS[1];
+  if (a.includes("nongthymmai") || a.includes("upper shillong")) return OFFICERS[2];
+  if (a.includes("mawlai") || a.includes("cantonment")) return OFFICERS[3];
+  if (a.includes("police bazar") || a.includes("bara bazar") || a.includes("ward")) return OFFICERS[0];
+  return DEFAULT_OFFICER;
 }
 
 /* ---------- Storage helpers (session-only) ---------- */
@@ -265,6 +317,7 @@ function renderStars(value) {
 
 function statusChip(status) {
   const map = {
+    Submitted: "chip pending",
     Pending: "chip pending",
     "Under Review": "chip review",
     "Action Taken": "chip action",

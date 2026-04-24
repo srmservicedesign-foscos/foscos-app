@@ -29,11 +29,15 @@
             Enter your registered phone number. A one-time password will be
             sent via SMS.
           </p>
-          <label class="label" for="loginPhone">Phone number</label>
+          <label class="label" for="loginPhone">
+            <span>📞</span> Phone number
+          </label>
           <input id="loginPhone" class="input" type="tel" placeholder="+91 XXXXX XXXXX" />
           <button id="sendOtpBtn" class="btn block" style="margin-top: 16px">
-            Send OTP
+            <span>🔑</span> Send OTP
           </button>
+          <div id="recaptcha-container"></div>
+          <div id="loginError" class="notice hidden" style="margin-top: 10px"></div>
         </div>
       </section>
 
@@ -52,7 +56,10 @@
             <input type="text" inputmode="numeric" maxlength="1" />
             <input type="text" inputmode="numeric" maxlength="1" />
           </div>
-          <button id="verifyBtn" class="btn block">Verify OTP</button>
+          <button id="verifyBtn" class="btn block">
+            <span>✔</span> Verify OTP
+          </button>
+          <div id="otpError" class="notice hidden" style="margin-top: 10px"></div>
         </div>
       </section>
 
@@ -70,9 +77,9 @@
           <div class="stat-card">
             <span class="stat-icon amber" id="sdIcon2"></span>
             <div>
-              <div class="stat-label">Pending</div>
+              <div class="stat-label">Submitted</div>
               <div class="stat-value" id="sdPending">0</div>
-              <div class="stat-hint">awaiting action</div>
+              <div class="stat-hint">awaiting triage</div>
             </div>
           </div>
           <div class="stat-card">
@@ -96,7 +103,24 @@
         <div class="notice">
           <span id="bellIcon"></span>
           The Food Safety Officer may contact you for verification of
-          submitted complaints.
+          submitted complaints. Flagged/serious complaints are highlighted.
+        </div>
+
+        <!-- Assigned FSO card -->
+        <div class="card" id="fsoCard" style="background: var(--cream)">
+          <h3>🏛 Your Assigned Food Safety Officer</h3>
+          <div class="flex" style="gap: 14px; align-items: flex-start; margin-top: 6px">
+            <span class="icon-circle sage">👮</span>
+            <div style="flex: 1">
+              <h4 id="fsoName" style="margin: 0 0 2px">—</h4>
+              <div class="meta" id="fsoDesig"></div>
+              <div class="meta" style="margin-top: 4px" id="fsoOffice"></div>
+              <div class="meta" style="margin-top: 4px" id="fsoJuris"></div>
+            </div>
+            <a class="btn" id="fsoCall" href="#">
+              <span>📞</span> Contact
+            </a>
+          </div>
         </div>
 
         <div class="flex-between" style="margin-top: 22px; margin-bottom: 12px">
@@ -104,9 +128,14 @@
             <span id="listIcon"></span>
             Complaint History
           </h2>
-          <a href="index.html" class="btn small">
-            <span id="plusIcon"></span> File New Complaint
-          </a>
+          <div class="flex" style="gap: 8px">
+            <button id="signOutBtn" class="btn secondary small">
+              <span>↩</span> Sign Out
+            </button>
+            <a href="index.html" class="btn small">
+              <span id="plusIcon"></span> File New Complaint
+            </a>
+          </div>
         </div>
 
         <div id="complaintList"></div>
@@ -114,6 +143,7 @@
     </main>
 
     <script src="/static/script.js"></script>
+    <script type="module" src="/static/firebase.js"></script>
     <script>
       qs("#navbar").innerHTML = renderNavbar("home");
       qs("#bellIcon").innerHTML = Icons.bell;
@@ -124,44 +154,152 @@
       qs("#sdIcon3").innerHTML = Icons.search_doc;
       qs("#sdIcon4").innerHTML = Icons.verified;
 
-      qs("#sendOtpBtn").addEventListener("click", () => {
+      function showLoginError(msg) {
+        const el = qs("#loginError");
+        el.innerHTML = "⚠ " + msg;
+        el.classList.remove("hidden");
+      }
+      function hideLoginError() {
+        qs("#loginError").classList.add("hidden");
+      }
+      function showOtpError(msg) {
+        const el = qs("#otpError");
+        el.innerHTML = "⚠ " + msg;
+        el.classList.remove("hidden");
+      }
+      function hideOtpError() {
+        qs("#otpError").classList.add("hidden");
+      }
+
+      qs("#sendOtpBtn").addEventListener("click", async () => {
+        hideLoginError();
         const phone = qs("#loginPhone").value.trim();
         if (!/^\+?\d{10,13}$/.test(phone.replace(/\s|-/g, ""))) {
-          alert("Please enter a valid phone number.");
+          showLoginError("Please enter a valid phone number.");
           return;
         }
-        qs("#otpPhoneLabel").textContent = phone;
-        qs("#loginStep").classList.add("hidden");
-        qs("#otpStep").classList.remove("hidden");
+        const btn = qs("#sendOtpBtn");
+        btn.disabled = true;
+        btn.textContent = "Sending…";
+        try {
+          if (window.Portal && window.Portal.isAuthReady) {
+            await window.Portal.sendOtp(phone);
+          }
+          qs("#otpPhoneLabel").textContent =
+            (window.Portal && window.Portal.normalizePhone
+              ? window.Portal.normalizePhone(phone)
+              : phone);
+          qs("#loginStep").classList.add("hidden");
+          qs("#otpStep").classList.remove("hidden");
+        } catch (e) {
+          showLoginError(
+            (e && e.message) ||
+              "Could not send OTP. Check Firebase Phone Auth setup."
+          );
+        } finally {
+          btn.disabled = false;
+          btn.innerHTML = "<span>🔑</span> Send OTP";
+        }
       });
 
       wireOtpBoxes("#otpBoxes");
 
-      qs("#verifyBtn").addEventListener("click", () => {
+      qs("#verifyBtn").addEventListener("click", async () => {
+        hideOtpError();
         const code = getOtpValue("#otpBoxes");
         if (code.length !== 6) {
-          alert("Please enter all 6 digits.");
+          showOtpError("Please enter all 6 digits.");
           return;
         }
-        qs("#otpStep").classList.add("hidden");
-        qs("#dashboardStep").classList.remove("hidden");
-        renderComplaints();
+        const btn = qs("#verifyBtn");
+        btn.disabled = true;
+        btn.textContent = "Verifying…";
+        try {
+          if (window.Portal && window.Portal.isAuthReady) {
+            await window.Portal.verifyOtp(code);
+          }
+          const phone = qs("#otpPhoneLabel").textContent;
+          Store.set("consumerPhone", phone);
+          qs("#otpStep").classList.add("hidden");
+          qs("#dashboardStep").classList.remove("hidden");
+          await renderComplaints(phone);
+        } catch (e) {
+          showOtpError(
+            (e && e.message) || "OTP verification failed."
+          );
+        } finally {
+          btn.disabled = false;
+          btn.innerHTML = "<span>✔</span> Verify OTP";
+        }
+      });
+
+      qs("#signOutBtn").addEventListener("click", async () => {
+        if (window.Portal && window.Portal.signOutUser) {
+          await window.Portal.signOutUser();
+        }
+        Store.clear("consumerPhone");
+        location.reload();
       });
 
       function statusIcon(status) {
-        if (status === "Action Taken") return icon("check", "sm");
-        if (status === "Under Review") return icon("search_doc", "sm");
-        return icon("clock", "sm");
+        if (status === "Action Taken") return "✅";
+        if (status === "Under Review") return "🔎";
+        return "⏱";
       }
 
-      function renderComplaints() {
-        const user = Store.get("userComplaints", []);
-        const all = [...user, ...MOCK_COMPLAINTS];
+      function normalizeComplaintRow(c) {
+        // Handle both local shape { id, restaurant, rating, status, date, comment }
+        // and Firestore shape with full fields
+        if (c.complaintId) {
+          const createdAt = c.createdAt && c.createdAt.toDate
+            ? c.createdAt.toDate()
+            : new Date(c.createdAt || Date.now());
+          return {
+            id: c.complaintId,
+            restaurant: c.restaurantName || "",
+            rating: Number(c.overallRating) || 0,
+            status: c.status || "Submitted",
+            date: createdAt.toISOString().slice(0, 10),
+            comment: c.comment || "",
+            assignedFSO: c.assignedFSO || "",
+            flaggedByFBO: !!c.flaggedByFBO,
+          };
+        }
+        return { flaggedByFBO: false, ...c };
+      }
+
+      function renderFsoCard(location) {
+        const officer =
+          (typeof findOfficerByArea === "function" && findOfficerByArea(location)) ||
+          (typeof DEFAULT_OFFICER !== "undefined" ? DEFAULT_OFFICER : null);
+        if (!officer) return;
+        qs("#fsoName").textContent = officer.name;
+        qs("#fsoDesig").innerHTML = `<span>🪪</span> ${officer.designation}`;
+        qs("#fsoOffice").innerHTML = `<span>🏢</span> ${officer.office}`;
+        qs("#fsoJuris").innerHTML = `<span>📌</span> ${officer.jurisdiction}`;
+        qs("#fsoCall").href = `tel:${officer.contact.replace(/[^\d+]/g, "")}`;
+      }
+
+      async function loadComplaints(phone) {
+        let remote = null;
+        if (window.Portal && window.Portal.fetchComplaintsByPhone) {
+          remote = await window.Portal.fetchComplaintsByPhone(phone);
+        }
+        const local = Store.get("userComplaints", []);
+        if (remote && remote.length) {
+          return remote.map(normalizeComplaintRow);
+        }
+        if (local.length) return local.map(normalizeComplaintRow);
+        return MOCK_COMPLAINTS.map(normalizeComplaintRow);
+      }
+
+      async function renderComplaints(phone) {
+        const all = await loadComplaints(phone);
         const listEl = qs("#complaintList");
 
         qs("#sdTotal").textContent = all.length;
-        qs("#sdPending").textContent = all.filter(
-          (c) => c.status === "Pending"
+        qs("#sdPending").textContent = all.filter((c) =>
+          c.status === "Submitted" || c.status === "Pending"
         ).length;
         qs("#sdReview").textContent = all.filter(
           (c) => c.status === "Under Review"
@@ -169,6 +307,13 @@
         qs("#sdAction").textContent = all.filter(
           (c) => c.status === "Action Taken"
         ).length;
+
+        // Use the most recent complaint's restaurant location to pick an FSO
+        const anyLocation =
+          (all[0] && all[0].restaurantLocation) ||
+          (all[0] && all[0].restaurant) ||
+          "";
+        renderFsoCard(anyLocation);
 
         if (!all.length) {
           listEl.innerHTML =
@@ -181,27 +326,34 @@
             <div class="card">
               <div class="card-row">
                 <div class="flex" style="align-items: flex-start; gap: 14px">
-                  <span class="icon-circle lg" id="ic_${c.id}"></span>
+                  <span class="icon-circle lg">${
+                    c.status === "Action Taken"
+                      ? "✅"
+                      : c.status === "Under Review"
+                      ? "🔎"
+                      : "⏱"
+                  }</span>
                   <div>
                     <h3>${c.restaurant}</h3>
-                    <div class="meta">${icon("clock", "sm")} Filed: ${c.date}</div>
-                    <div class="meta" style="margin-top: 4px">${icon(
-                      "document",
-                      "sm"
-                    )} ${c.id}</div>
-                    <div class="meta" style="margin-top: 6px">${
-                      c.comment || ""
-                    }</div>
+                    <div class="meta"><span>⏱</span> Filed: ${c.date}</div>
+                    <div class="meta" style="margin-top: 4px"><span>📄</span> ${c.id}</div>
+                    <div class="meta" style="margin-top: 6px">${c.comment || ""}</div>
+                    ${
+                      c.flaggedByFBO
+                        ? '<div class="pill amber" style="margin-top: 6px; font-size: 11px">🚨 Flagged — urgent</div>'
+                        : ""
+                    }
                   </div>
                 </div>
                 <div style="text-align:right">
                   <span class="rating-badge">
-                    ${icon("star", "sm")} ${c.rating.toFixed(1)} / 5
+                    <span>⭐</span> ${Number(c.rating).toFixed(1)} / 5
                   </span>
                   <div style="margin-top: 8px">
                     <span class="chip ${
                       {
                         Pending: "pending",
+                        Submitted: "pending",
                         "Under Review": "review",
                         "Action Taken": "action",
                       }[c.status] || ""
@@ -210,31 +362,43 @@
                 </div>
               </div>
               <div style="margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap">
-                <a href="track.html?id=${c.id}" class="btn secondary small">
-                  ${icon("history", "sm")} Track
+                <a href="track.html?id=${encodeURIComponent(
+                  c.id
+                )}" class="btn secondary small">
+                  <span>🕒</span> Track
                 </a>
                 <span class="pill navy" style="font-size: 11px">
-                  ${icon("shield", "sm")} Confidential
+                  <span>🛡</span> Confidential
                 </span>
               </div>
             </div>`
           )
           .join("");
-
-        all.forEach((c) => {
-          const el = qs(`#ic_${c.id}`);
-          if (!el) return;
-          if (c.status === "Action Taken") {
-            el.classList.add("sage");
-            el.innerHTML = Icons.verified;
-          } else if (c.status === "Under Review") {
-            el.innerHTML = Icons.search_doc;
-          } else {
-            el.classList.add("amber");
-            el.innerHTML = Icons.clock;
-          }
-        });
       }
+
+      // Auto-login if Firebase already has a user, or if we have a saved phone
+      function boot() {
+        const cached = Store.get("consumerPhone");
+        if (cached) qs("#loginPhone").value = cached;
+
+        const tryAuto = () => {
+          if (!window.Portal) return;
+          if (window.Portal.isAuthReady && window.Portal.onAuthChanged) {
+            window.Portal.onAuthChanged(async (user) => {
+              if (user && user.phoneNumber) {
+                qs("#loginStep").classList.add("hidden");
+                qs("#otpStep").classList.add("hidden");
+                qs("#dashboardStep").classList.remove("hidden");
+                Store.set("consumerPhone", user.phoneNumber);
+                await renderComplaints(user.phoneNumber);
+              }
+            });
+          }
+        };
+        if (window.Portal) tryAuto();
+        else window.addEventListener("portal:ready", tryAuto, { once: true });
+      }
+      boot();
     </script>
   </body>
 </html>

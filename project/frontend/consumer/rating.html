@@ -184,10 +184,12 @@
             <input type="text" inputmode="numeric" maxlength="1" />
             <input type="text" inputmode="numeric" maxlength="1" />
           </div>
-          <button id="verifyOtpBtn" class="btn block">Verify OTP</button>
+          <button id="verifyOtpBtn" class="btn block">Verify OTP &amp; Submit</button>
           <p class="muted" style="text-align: center; margin-top: 10px">
-            Didn't receive the code? <a href="#">Resend</a>
+            Didn't receive the code? <a href="#" id="resendOtp">Resend</a>
           </p>
+          <div id="recaptcha-container"></div>
+          <div id="otpError" class="notice hidden" style="margin-top: 10px"></div>
         </div>
       </section>
 
@@ -238,6 +240,7 @@
     </main>
 
     <script src="/static/script.js"></script>
+    <script type="module" src="/static/firebase.js"></script>
     <script>
       qs("#navbar").innerHTML = renderNavbar("home");
       qs("#ic1").innerHTML = Icons.building_clean;
@@ -314,17 +317,57 @@
       sliders.forEach((s) => s.addEventListener("input", updateRatings));
       updateRatings();
 
-      qs("#continueBtn").addEventListener("click", () => {
+      function readFileAsDataUrl(file) {
+        if (!file) return Promise.resolve("");
+        if (window.Portal && window.Portal.compressImageFile) {
+          return window.Portal.compressImageFile(file);
+        }
+        return new Promise((resolve) => {
+          const r = new FileReader();
+          r.onload = (e) => resolve(e.target.result);
+          r.onerror = () => resolve("");
+          r.readAsDataURL(file);
+        });
+      }
+
+      function showOtpError(msg) {
+        const el = qs("#otpError");
+        el.innerHTML = "⚠ " + msg;
+        el.classList.remove("hidden");
+      }
+
+      function hideOtpError() {
+        qs("#otpError").classList.add("hidden");
+      }
+
+      async function gotoOtpStep(phone) {
+        qs("#otpPhone").textContent = phone;
+        qs("#rateStep").classList.add("hidden");
+        qs("#otpStep").classList.remove("hidden");
+        hideOtpError();
+        if (window.Portal && window.Portal.isAuthReady) {
+          try {
+            await window.Portal.sendOtp(phone);
+          } catch (e) {
+            showOtpError(
+              (e && e.message) ||
+                "Could not send OTP. Check Firebase Phone Auth setup."
+            );
+          }
+        }
+      }
+
+      qs("#continueBtn").addEventListener("click", async () => {
         const values = sliders.map((s) => parseInt(s.value));
         const hasBad = values.some((v) => v < 3);
-        let name, phone;
+        let name, phone, evidenceFile, billFile, commentText;
 
         if (hasBad) {
-          const evidence = qs("#evidenceImg").files.length;
-          const bill = qs("#billImg").files.length;
+          evidenceFile = qs("#evidenceImg").files[0];
+          billFile = qs("#billImg").files[0];
           name = qs("#badName").value.trim();
           phone = qs("#badPhone").value.trim();
-          if (!evidence || !bill) {
+          if (!evidenceFile || !billFile) {
             alert("Please upload both evidence and bill photos.");
             return;
           }
@@ -332,9 +375,15 @@
             alert("Please enter your name and phone number.");
             return;
           }
+          commentText = "Evidence uploaded for investigation.";
         } else {
           name = qs("#goodName").value.trim();
           phone = qs("#goodPhone").value.trim();
+          commentText = qs("#goodComment").value.trim();
+          if (!name) {
+            alert("Please enter your name.");
+            return;
+          }
           if (!phone) {
             alert("Please enter your phone number.");
             return;
@@ -346,6 +395,16 @@
           return;
         }
 
+        const [evidenceData, billData] = await Promise.all([
+          readFileAsDataUrl(evidenceFile),
+          readFileAsDataUrl(billFile),
+        ]);
+
+        const officer =
+          (typeof findOfficerByArea === "function"
+            ? findOfficerByArea(restaurant.location)
+            : null) || null;
+
         Store.set("ratingSubmission", {
           restaurant,
           ratings: {
@@ -356,48 +415,121 @@
           average: parseFloat(avgNum.textContent),
           name,
           phone,
+          comment: commentText,
           hasBad,
+          evidencePhoto: evidenceData || "",
+          billPhoto: billData || "",
+          assignedFSO: officer ? officer.name : "",
         });
 
-        qs("#otpPhone").textContent = phone;
-        qs("#rateStep").classList.add("hidden");
-        qs("#otpStep").classList.remove("hidden");
+        await gotoOtpStep(phone);
+      });
+
+      qs("#resendOtp").addEventListener("click", async (e) => {
+        e.preventDefault();
+        const phone = qs("#otpPhone").textContent;
+        hideOtpError();
+        if (window.Portal && window.Portal.isAuthReady) {
+          try {
+            await window.Portal.sendOtp(phone);
+            alert("OTP resent.");
+          } catch (err) {
+            showOtpError((err && err.message) || "Resend failed.");
+          }
+        } else {
+          alert("OTP resent (demo mode — any 6 digits will work).");
+        }
       });
 
       wireOtpBoxes("#otpBoxes");
-      qs("#verifyOtpBtn").addEventListener("click", () => {
+      qs("#verifyOtpBtn").addEventListener("click", async () => {
         const code = getOtpValue("#otpBoxes");
         if (code.length !== 6) {
-          alert("Please enter all 6 digits.");
+          showOtpError("Please enter all 6 digits.");
           return;
         }
+        hideOtpError();
+        const btn = qs("#verifyOtpBtn");
+        btn.disabled = true;
+        btn.textContent = "Verifying…";
+
+        try {
+          if (window.Portal && window.Portal.isAuthReady) {
+            await window.Portal.verifyOtp(code);
+          }
+        } catch (e) {
+          btn.disabled = false;
+          btn.textContent = "Verify OTP & Submit";
+          showOtpError(
+            (e && e.message) || "OTP verification failed. Please try again."
+          );
+          return;
+        }
+
+        const submission = Store.get("ratingSubmission");
+        const today = new Date().toISOString().slice(0, 10);
+        const payload = {
+          restaurantId: submission.restaurant.id || "",
+          restaurantName: submission.restaurant.name || "",
+          restaurantLicense: submission.restaurant.license || "",
+          restaurantLocation: submission.restaurant.location || "",
+          rating_cleanliness: submission.ratings.premise_cleanliness,
+          rating_food_freshness: submission.ratings.food_freshness,
+          rating_staff_hygiene: submission.ratings.staff_hygiene,
+          overallRating: submission.average,
+          comment: submission.comment || "",
+          evidencePhoto: submission.evidencePhoto || "",
+          billPhoto: submission.billPhoto || "",
+          consumerName: submission.name,
+          consumerPhone: submission.phone,
+          assignedFSO: submission.assignedFSO || "",
+        };
+
+        let complaintId = "";
+        let savedRemotely = false;
+        if (window.Portal && window.Portal.submitComplaint) {
+          const res = await window.Portal.submitComplaint(payload);
+          complaintId = res.complaintId;
+          savedRemotely = res.savedRemotely;
+        } else {
+          complaintId = "GRV-" + new Date().getFullYear() + "-" +
+            Math.floor(10000 + Math.random() * 90000);
+        }
+
+        // Also keep a local copy so the dashboard can list it
+        const existing = Store.get("userComplaints", []);
+        existing.unshift({
+          id: complaintId,
+          restaurant: submission.restaurant.name,
+          rating: submission.average,
+          status: "Submitted",
+          date: today,
+          comment: submission.comment || (submission.hasBad
+            ? "Evidence uploaded for investigation."
+            : ""),
+          assignedFSO: submission.assignedFSO || "",
+        });
+        Store.set("userComplaints", existing);
+        Store.set("consumerPhone", submission.phone);
+
         qs("#otpStep").classList.add("hidden");
         qs("#doneStep").classList.remove("hidden");
 
-        const submission = Store.get("ratingSubmission");
-        const existing = Store.get("userComplaints", []);
-        const newId = "C" + Math.floor(900 + Math.random() * 99);
-        const today = new Date().toISOString().slice(0, 10);
-        existing.unshift({
-          id: newId,
-          restaurant: submission.restaurant.name,
-          rating: submission.average,
-          status: "Pending",
-          date: today,
-          comment: submission.hasBad
-            ? "Evidence uploaded for investigation."
-            : qs("#goodComment")?.value || "",
-        });
-        Store.set("userComplaints", existing);
-
         qs("#successIconWrap").innerHTML = "✔️";
-        qs("#kvCid").textContent = newId;
+        qs("#kvCid").textContent = complaintId;
         qs("#kvDate").textContent = today;
         qs("#kvIcon1").innerHTML = Icons.document;
         qs("#kvIcon2").innerHTML = Icons.clock;
         qs("#kvIcon3").innerHTML = Icons.stopwatch;
         qs("#trackBtnIcon").innerHTML = Icons.history;
         qs("#homeBtnIcon").innerHTML = Icons.home;
+        qs("#trackBtn").href = `track.html?id=${encodeURIComponent(complaintId)}`;
+
+        if (!savedRemotely && window.Portal && !window.Portal.isFirebaseReady) {
+          console.info(
+            "Complaint saved locally (Firestore not configured)."
+          );
+        }
       });
     </script>
   </body>

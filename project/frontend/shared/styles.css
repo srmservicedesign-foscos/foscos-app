@@ -105,9 +105,13 @@ a:hover {
   padding: 14px 28px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 20px;
+  justify-content: flex-start;
+  gap: 28px;
   box-shadow: var(--shadow);
+}
+
+.app-header .actions {
+  margin-left: auto;
 }
 
 .app-header .brand {
@@ -1357,6 +1361,47 @@ a:hover {
 
 .icon-btn:hover {
   background: var(--navy-soft);
+}
+
+/* ---------- Area filter (homepage) ---------- */
+.area-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--white);
+  border: 1px solid var(--border-strong);
+  border-radius: 22px;
+  padding: 6px 14px;
+  font-size: 13px;
+  color: var(--navy);
+  box-shadow: var(--shadow-sm);
+}
+
+.area-filter label {
+  font-weight: 500;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.area-filter select {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--navy);
+  cursor: pointer;
+  padding: 2px 4px;
+  font-weight: 500;
+}
+
+.area-filter select:focus {
+  outline: none;
+}
+
+/* reCAPTCHA host */
+#recaptcha-container {
+  margin-top: 10px;
 }
 
 /* ---------- Back-link button ---------- */

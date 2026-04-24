@@ -80,12 +80,21 @@
         </div>
 
         <section id="nearbySection">
-          <div class="flex-between">
-            <h2 class="section-heading" style="margin-right: auto">
+          <div class="flex-between flex-wrap" style="gap: 10px">
+            <h2 class="section-heading" style="margin: 0 auto 0 0">
               <span class="icon" id="nearbyIcon"></span>
               Nearby Registered Restaurants
             </h2>
-            <span class="pill sage" id="nearbyCount"></span>
+            <div class="flex" style="gap: 8px; flex-wrap: wrap">
+              <span class="pill sage" id="nearbyCount"></span>
+              <div class="area-filter">
+                <span>📍</span>
+                <label for="areaSelect">Area</label>
+                <select id="areaSelect">
+                  <option value="">All Shillong</option>
+                </select>
+              </div>
+            </div>
           </div>
           <div id="firestoreNotice" class="notice hidden" style="margin: 6px 0 14px">
             ⚠ Showing mock data. To load live listings, fill your Firebase
@@ -235,7 +244,16 @@
       qs("#pillConfidential").innerHTML =
         `${icon("lock", "sm")} Confidential reporting`;
       qs("#jurisLabel").innerHTML =
-        `${icon("pin_code", "sm")} Jurisdiction: Bengaluru Urban`;
+        `${icon("pin_code", "sm")} Jurisdiction: Shillong, Meghalaya`;
+
+      // Populate area filter
+      const areaSel = qs("#areaSelect");
+      SHILLONG_AREAS.forEach((a) => {
+        const opt = document.createElement("option");
+        opt.value = a;
+        opt.textContent = a;
+        areaSel.appendChild(opt);
+      });
       qs("#statIcon1").innerHTML = Icons.building;
       qs("#statIcon2").innerHTML = Icons.sparkle;
       qs("#statIcon3").innerHTML = Icons.verified;
@@ -389,22 +407,30 @@
         homeView.classList.remove("hidden");
       }
 
-      function filterRestaurants(q) {
-        const lower = q.trim().toLowerCase();
-        if (!lower) return restaurants;
-        return restaurants.filter(
-          (r) =>
+      function filterRestaurants() {
+        const lower = (searchEl.value || "").trim().toLowerCase();
+        const area = (qs("#areaSelect").value || "").toLowerCase();
+        return restaurants.filter((r) => {
+          const matchesQuery =
+            !lower ||
             (r.name || "").toLowerCase().includes(lower) ||
-            (r.license || "").toLowerCase().includes(lower)
-        );
+            (r.license || "").toLowerCase().includes(lower);
+          const areaField = (r.area || r.location || "").toLowerCase();
+          const matchesArea = !area || areaField.includes(area);
+          return matchesQuery && matchesArea;
+        });
       }
 
-      searchEl.addEventListener("input", (e) => {
-        renderRestaurants(filterRestaurants(e.target.value));
+      searchEl.addEventListener("input", () => {
+        renderRestaurants(filterRestaurants());
+      });
+
+      qs("#areaSelect").addEventListener("change", () => {
+        renderRestaurants(filterRestaurants());
       });
 
       qs("#heroSearchBtn").addEventListener("click", () => {
-        renderRestaurants(filterRestaurants(searchEl.value));
+        renderRestaurants(filterRestaurants());
         nearbyEl.scrollIntoView({ behavior: "smooth" });
       });
 
@@ -417,7 +443,8 @@
         unregFormEl.classList.add("hidden");
         nearbyEl.classList.remove("hidden");
         searchEl.value = "";
-        renderRestaurants(restaurants);
+        qs("#areaSelect").value = "";
+        renderRestaurants(filterRestaurants());
       });
 
       qs("#unregSubmit").addEventListener("click", () => {
