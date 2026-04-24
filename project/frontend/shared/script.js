@@ -1,120 +1,78 @@
 /* Shared helpers + mock data for the Consumer Grievance Portal.
-   UI-only: no backend / database integrations yet. */
+   Icons are small inline emoji-style characters (not SVG illustrations).
+   Firestore integration lives in shared/firebase.js (optional). */
 
-/* ---------- Inline SVG icon library (Feather-style, stroke-based) ---------- */
+/* ---------- Icon map (emoji-style) ---------- */
 const Icons = {
-  search:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>',
-  map:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>',
-  star:
-    '<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg>',
-  sparkles:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8"/></svg>',
-  bell:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>',
-  shield:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
-  alert:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
-  check:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
-  upload:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>',
-  phone:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.8a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.28-1.28a2 2 0 0 1 2.11-.45c.9.35 1.84.59 2.8.72A2 2 0 0 1 22 16.92z"/></svg>',
-  user:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
-  home:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',
-  list:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>',
-  building:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="1"/><path d="M9 22V12h6v10"/><line x1="7" y1="7" x2="7.01" y2="7"/><line x1="11" y1="7" x2="11.01" y2="7"/><line x1="15" y1="7" x2="15.01" y2="7"/></svg>',
-  chef:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 14v6a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-6"/><path d="M6 14a4 4 0 0 1-1-7.75A4 4 0 0 1 12 3a4 4 0 0 1 7 2.25A4 4 0 0 1 18 14H6z"/></svg>',
-  leaf:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 4 13c0-5 5-11 9-11s4 4 4 7a7 7 0 0 1-6 11z"/><path d="M11 20c0-5 3-8 7-9"/></svg>',
-  sparkle:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M2 12h4M18 12h4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>',
-  flag:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>',
-  heart:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>',
-  search_doc:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><circle cx="11.5" cy="14.5" r="2.5"/><line x1="13.3" y1="16.3" x2="15" y2="18"/></svg>',
-  gavel:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 13l-8 8a2.83 2.83 0 1 1-4-4l8-8"/><path d="M17 3l4 4-8 8-4-4z"/><line x1="3" y1="22" x2="21" y2="22"/></svg>',
-  clipboard:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>',
-  clock:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
-  arrow_right:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>',
-  message:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
-  image:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>',
-  utensils:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2V2"/><line x1="5" y1="11" x2="5" y2="22"/><path d="M21 15V2a4 4 0 0 0-4 4v6a2 2 0 0 0 2 2h2v8"/></svg>',
-  plate:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/></svg>',
-  gloves:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 22V9a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v3"/><path d="M11 10V6a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v6"/><path d="M15 9V7a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v8a6 6 0 0 1-6 6H9a2 2 0 0 1-2-2"/></svg>',
-  building_clean:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="14" height="18" rx="1"/><path d="M8 7h2M8 11h2M8 15h2M14 7h0M14 11h0M14 15h0"/><path d="M19 4l1 1M20 8l1-1M22 12l-1-.5"/></svg>',
-  receipt:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1z"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="13" y2="16"/></svg>',
-  document:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>',
-  thumbs_up:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9A2 2 0 0 0 19.7 9H14z"/><line x1="7" y1="22" x2="7" y2="11"/></svg>',
-  info:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
-  badge:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M5 18c.5-1.5 2-2.5 4-2.5s3.5 1 4 2.5"/><line x1="15" y1="9" x2="19" y2="9"/><line x1="15" y1="13" x2="19" y2="13"/></svg>',
-  qr:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM14 20h3M20 14v3M17 20h4v-3"/></svg>',
-  mail:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><polyline points="3 7 12 13 21 7"/></svg>',
-  chart:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="20" x2="3" y2="10"/><line x1="10" y1="20" x2="10" y2="4"/><line x1="17" y1="20" x2="17" y2="14"/><line x1="3" y1="20" x2="21" y2="20"/></svg>',
-  filter:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>',
-  trending:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>',
-  lock:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>',
-  camera:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>',
-  award:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>',
-  history:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l3 2"/></svg>',
-  plus:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
-  eye:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',
-  grid:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>',
-  megaphone:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v2a2 2 0 0 0 2 2h2l6 4V5L7 9H5a2 2 0 0 0-2 2z"/><path d="M17 9a4 4 0 0 1 0 6"/><path d="M20 6a8 8 0 0 1 0 12"/></svg>',
-  verified:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L4 6v6c0 5 3.5 9.5 8 10 4.5-.5 8-5 8-10V6l-8-4z"/><polyline points="9 12 11 14 15 10"/></svg>',
-  stopwatch:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M9 2h6"/><path d="M12 2v3"/></svg>',
-  pin:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-7 8-13a8 8 0 1 0-16 0c0 6 8 13 8 13z"/><circle cx="12" cy="9" r="2.5"/></svg>',
-  fire:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2s6 5 6 11a6 6 0 0 1-12 0c0-3 1-5 3-6 0 3 3 3 3 0 0-2-1-4 0-5z"/></svg>',
+  search: "🔍",
+  map: "📍",
+  pin: "📍",
+  pin_code: "📌",
+  star: "⭐",
+  sparkles: "✨",
+  bell: "🔔",
+  shield: "🛡",
+  alert: "⚠",
+  check: "✔",
+  upload: "⬆",
+  phone: "📞",
+  user: "👤",
+  home: "🏠",
+  list: "📋",
+  building: "🏢",
+  chef: "🧑‍🍳",
+  leaf: "🌿",
+  sparkle: "✨",
+  flag: "🚩",
+  flagged: "🚨",
+  heart: "❤",
+  search_doc: "🔎",
+  gavel: "⚖",
+  clipboard: "📋",
+  clock: "⏱",
+  arrow_right: "→",
+  arrow_left: "←",
+  message: "💬",
+  image: "🖼",
+  utensils: "🍽",
+  plate: "🍽",
+  gloves: "🧤",
+  building_clean: "🏢",
+  receipt: "🧾",
+  document: "📄",
+  thumbs_up: "👍",
+  info: "ℹ",
+  badge: "🪪",
+  qr: "🔳",
+  mail: "✉",
+  chart: "📊",
+  filter: "🔽",
+  trending: "📈",
+  lock: "🔒",
+  camera: "📷",
+  award: "🏆",
+  history: "🕒",
+  plus: "➕",
+  eye: "👁",
+  grid: "🔲",
+  megaphone: "📣",
+  verified: "✅",
+  stopwatch: "⏱",
+  fire: "🔥",
+  book: "📖",
+  law: "⚖",
+  fso: "🏛",
+  officer: "👮",
+  office: "🏢",
+  close: "✕",
 };
 
 function icon(name, cls = "") {
-  const svg = Icons[name] || "";
-  return `<span class="icon ${cls}">${svg}</span>`;
+  const e = Icons[name] || "";
+  return `<span class="icon ${cls}">${e}</span>`;
 }
 
-/* ---------- Mock data ---------- */
+/* ---------- Mock data (fallback when Firestore not configured) ---------- */
 const MOCK_RESTAURANTS = [
   {
     id: "R001",
@@ -124,9 +82,9 @@ const MOCK_RESTAURANTS = [
     rating: 4.3,
     cuisine: "Vegetarian · Indian",
     comments: [
-      { text: "Excellent hygiene and polite staff.", type: "good" },
-      { text: "Found a hair in my food once.", type: "bad" },
-      { text: "Loved the fresh salad.", type: "good" },
+      { text: "Excellent hygiene and polite staff.", type: "good", status: "approved" },
+      { text: "Found a hair in my food once.", type: "bad", status: "approved" },
+      { text: "Loved the fresh salad.", type: "good", status: "approved" },
     ],
   },
   {
@@ -137,8 +95,8 @@ const MOCK_RESTAURANTS = [
     rating: 3.8,
     cuisine: "Bengali · Chinese",
     comments: [
-      { text: "Tasty food, but slow service.", type: "good" },
-      { text: "Floor was a bit sticky.", type: "bad" },
+      { text: "Tasty food, but slow service.", type: "good", status: "approved" },
+      { text: "Floor was a bit sticky.", type: "bad", status: "approved" },
     ],
   },
   {
@@ -149,8 +107,8 @@ const MOCK_RESTAURANTS = [
     rating: 4.6,
     cuisine: "North Indian · Mughlai",
     comments: [
-      { text: "Best kebabs in town.", type: "good" },
-      { text: "Kitchen looked dirty through the window.", type: "bad" },
+      { text: "Best kebabs in town.", type: "good", status: "approved" },
+      { text: "Kitchen looked dirty through the window.", type: "bad", status: "approved" },
     ],
   },
   {
@@ -161,8 +119,8 @@ const MOCK_RESTAURANTS = [
     rating: 4.1,
     cuisine: "Seafood",
     comments: [
-      { text: "Very fresh fish.", type: "good" },
-      { text: "A bit pricey but clean.", type: "good" },
+      { text: "Very fresh fish.", type: "good", status: "approved" },
+      { text: "A bit pricey but clean.", type: "good", status: "approved" },
     ],
   },
   {
@@ -173,8 +131,8 @@ const MOCK_RESTAURANTS = [
     rating: 3.2,
     cuisine: "South Indian",
     comments: [
-      { text: "Staff weren't wearing gloves.", type: "bad" },
-      { text: "Dosa was crisp and tasty.", type: "good" },
+      { text: "Staff weren't wearing gloves.", type: "bad", status: "approved" },
+      { text: "Dosa was crisp and tasty.", type: "good", status: "approved" },
     ],
   },
   {
@@ -184,9 +142,7 @@ const MOCK_RESTAURANTS = [
     license: "10012345001345",
     rating: 4.4,
     cuisine: "Continental",
-    comments: [
-      { text: "Great ambience and service.", type: "good" },
-    ],
+    comments: [{ text: "Great ambience and service.", type: "good", status: "approved" }],
   },
 ];
 
@@ -219,6 +175,64 @@ const MOCK_COMPLAINTS = [
 
 const RATING_LABELS = ["Very Poor", "Poor", "Okay", "Good", "Excellent"];
 
+/* ---------- Find-an-Officer mock data (keyed by PIN prefix) ---------- */
+const OFFICERS = [
+  {
+    prefix: "560",
+    name: "Ms. Anjali Nair",
+    designation: "Food Safety Officer",
+    contact: "+91-80-2234-5678",
+    office: "FSSAI Regional Office, Bengaluru",
+    jurisdiction: "Bengaluru Urban (560xxx)",
+  },
+  {
+    prefix: "400",
+    name: "Mr. Rohan Desai",
+    designation: "Food Safety Officer",
+    contact: "+91-22-2765-4321",
+    office: "FSSAI Regional Office, Mumbai",
+    jurisdiction: "Greater Mumbai (400xxx)",
+  },
+  {
+    prefix: "110",
+    name: "Ms. Priya Sharma",
+    designation: "Food Safety Officer",
+    contact: "+91-11-2345-6789",
+    office: "FSSAI Regional Office, New Delhi",
+    jurisdiction: "New Delhi District (110xxx)",
+  },
+  {
+    prefix: "600",
+    name: "Mr. Karthik Iyer",
+    designation: "Food Safety Officer",
+    contact: "+91-44-2456-7890",
+    office: "FSSAI Regional Office, Chennai",
+    jurisdiction: "Chennai Metropolitan (600xxx)",
+  },
+  {
+    prefix: "700",
+    name: "Ms. Sanchita Roy",
+    designation: "Food Safety Officer",
+    contact: "+91-33-2456-3456",
+    office: "FSSAI Regional Office, Kolkata",
+    jurisdiction: "Kolkata (700xxx)",
+  },
+  {
+    prefix: "500",
+    name: "Mr. Arjun Reddy",
+    designation: "Food Safety Officer",
+    contact: "+91-40-2345-6712",
+    office: "FSSAI Regional Office, Hyderabad",
+    jurisdiction: "Hyderabad (500xxx)",
+  },
+];
+
+function findOfficerByPin(pin) {
+  const p = String(pin || "").trim();
+  if (!/^\d{6}$/.test(p)) return null;
+  return OFFICERS.find((o) => p.startsWith(o.prefix)) || OFFICERS[0];
+}
+
 /* ---------- Storage helpers (session-only) ---------- */
 const Store = {
   set(key, value) {
@@ -245,9 +259,7 @@ const Store = {
 function renderStars(value) {
   const full = Math.round(value);
   let out = "";
-  for (let i = 0; i < 5; i++) {
-    out += i < full ? "★" : "☆";
-  }
+  for (let i = 0; i < 5; i++) out += i < full ? "★" : "☆";
   return out;
 }
 
@@ -285,14 +297,10 @@ function wireOtpBoxes(containerSelector) {
   boxes.forEach((box, idx) => {
     box.addEventListener("input", () => {
       box.value = box.value.replace(/\D/g, "").slice(0, 1);
-      if (box.value && idx < boxes.length - 1) {
-        boxes[idx + 1].focus();
-      }
+      if (box.value && idx < boxes.length - 1) boxes[idx + 1].focus();
     });
     box.addEventListener("keydown", (e) => {
-      if (e.key === "Backspace" && !box.value && idx > 0) {
-        boxes[idx - 1].focus();
-      }
+      if (e.key === "Backspace" && !box.value && idx > 0) boxes[idx - 1].focus();
     });
   });
 }
@@ -303,73 +311,119 @@ function getOtpValue(containerSelector) {
     .join("");
 }
 
-/* ---------- Navbar helper (shared across pages) ---------- */
-function renderNavbar(active = "home", role = "consumer") {
-  const links =
-    role === "consumer"
-      ? [
-          { href: "/consumer/index.html", key: "home", label: "Home", icon: "home" },
-          {
-            href: "/consumer/dashboard.html",
-            key: "dashboard",
-            label: "My Complaints",
-            icon: "list",
-          },
-          {
-            href: "/consumer/track.html",
-            key: "track",
-            label: "Track",
-            icon: "clock",
-          },
-        ]
-      : role === "fbo"
-      ? [
-          {
-            href: "/fbo/dashboard.html",
-            key: "feedback",
-            label: "Feedback",
-            icon: "message",
-          },
-          { href: "/consumer/index.html", key: "consumer", label: "Consumer Site", icon: "home" },
-        ]
-      : [
-          {
-            href: "/fso/dashboard.html",
-            key: "complaints",
-            label: "Complaints",
-            icon: "clipboard",
-          },
-          {
-            href: "/fso/dashboard.html#fbo",
-            key: "fbo",
-            label: "FBO Database",
-            icon: "building",
-          },
-        ];
+/* ---------- Navbar (shared across pages) ---------- */
+function renderNavbar(active = "home") {
+  const links = [
+    { href: "/consumer/index.html", key: "home", label: "Home", icon: "home" },
+    { href: "#officer", key: "officer", label: "Find an Officer", icon: "officer" },
+    { href: "#rules", key: "rules", label: "Rules & Regulations", icon: "book" },
+    { href: "https://www.fssai.gov.in", key: "fssai", label: "FSSAI", icon: "shield" },
+  ];
 
   return `
     <header class="app-header">
-      <div class="brand">
+      <a href="/consumer/index.html" class="brand">
         <span class="logo">CG</span>
         <div>
           <div>Consumer Grievance Portal</div>
           <small>Food Safety &amp; Standards</small>
         </div>
-      </div>
+      </a>
       <nav>
         ${links
-          .map(
-            (l) =>
-              `<a href="${l.href}" class="${
-                l.key === active ? "active" : ""
-              }">${icon(l.icon, "sm")} ${l.label}</a>`
-          )
+          .map((l) => {
+            const target =
+              l.key === "fssai"
+                ? 'target="_blank" rel="noopener"'
+                : "";
+            return `<a href="${l.href}" ${target} class="${
+              l.key === active ? "active" : ""
+            }" data-navkey="${l.key}">${icon(l.icon, "sm")} ${l.label}</a>`;
+          })
           .join("")}
       </nav>
       <div class="actions">
         <a href="/consumer/dashboard.html" class="btn ghost">
-          ${icon("user", "sm")} Sign in
+          ${icon("user", "sm")} Sign In
         </a>
       </div>
     </header>`;
 }
+
+/* ---------- Find-an-Officer modal (injected + wired once) ---------- */
+function ensureOfficerModal() {
+  if (qs("#officerModal")) return;
+  const el = document.createElement("div");
+  el.id = "officerModal";
+  el.className = "modal hidden";
+  el.innerHTML = `
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3>${icon("officer", "sm")} Find your Food Safety Officer</h3>
+        <button class="icon-btn" data-close aria-label="Close">✕</button>
+      </div>
+      <p class="muted">Enter your 6-digit PIN code to see the assigned FSO for your jurisdiction.</p>
+      <label class="label">${icon("pin_code", "sm")} PIN code</label>
+      <div class="flex" style="gap: 8px">
+        <input class="input" id="officerPin" type="text" inputmode="numeric"
+               maxlength="6" placeholder="e.g. 560001" />
+        <button class="btn" id="officerLookup">Find</button>
+      </div>
+      <div id="officerResult" style="margin-top: 14px"></div>
+    </div>`;
+  document.body.appendChild(el);
+
+  qsa("[data-close]", el).forEach((b) =>
+    b.addEventListener("click", () => el.classList.add("hidden"))
+  );
+  qs("#officerLookup", el).addEventListener("click", () => {
+    const pin = qs("#officerPin", el).value.trim();
+    const o = findOfficerByPin(pin);
+    const result = qs("#officerResult", el);
+    if (!o) {
+      result.innerHTML =
+        '<div class="notice">⚠ Please enter a valid 6-digit PIN code.</div>';
+      return;
+    }
+    result.innerHTML = `
+      <div class="card" style="margin-bottom: 0; background: var(--cream)">
+        <div class="flex" style="gap: 10px; align-items: flex-start">
+          <span class="icon-circle sage">${Icons.officer}</span>
+          <div>
+            <h4>${o.name}</h4>
+            <div class="meta">${icon("badge", "sm")} ${o.designation}</div>
+            <div class="meta" style="margin-top: 4px">${icon("phone", "sm")} ${o.contact}</div>
+            <div class="meta" style="margin-top: 4px">${icon("building", "sm")} ${o.office}</div>
+            <div class="meta" style="margin-top: 4px">${icon("pin", "sm")} ${o.jurisdiction}</div>
+          </div>
+        </div>
+      </div>`;
+  });
+}
+
+function openOfficerModal() {
+  ensureOfficerModal();
+  const m = qs("#officerModal");
+  m.classList.remove("hidden");
+  const inp = qs("#officerPin", m);
+  if (inp) inp.focus();
+}
+
+/* Wire navbar-level triggers after it's injected */
+function wireNavbarTriggers() {
+  document.addEventListener("click", (e) => {
+    const a = e.target.closest("a[data-navkey]");
+    if (!a) return;
+    if (a.dataset.navkey === "officer") {
+      e.preventDefault();
+      openOfficerModal();
+    } else if (a.dataset.navkey === "rules") {
+      e.preventDefault();
+      alert(
+        "Rules & Regulations — Food Safety and Standards Act, 2006 and allied regulations. (Link placeholder)"
+      );
+    }
+  });
+}
+wireNavbarTriggers();

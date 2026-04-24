@@ -35,10 +35,27 @@
   box-sizing: border-box;
 }
 
-/* ---------- Global SVG safety net ----------
-   Any inline SVG defaults to a small inline icon. Specific containers
-   (stat-icon, icon-circle, etc.) override below. This prevents raw SVGs
-   inserted without a sizing wrapper from stretching to fill their parent. */
+/* ---------- Global icon sizing (emoji-style) ----------
+   Icons are inline emoji characters wrapped in .icon spans. Containers
+   such as .icon-circle / .stat-icon size the content via font-size. */
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  font-size: 15px;
+  font-style: normal;
+}
+
+.icon.sm {
+  font-size: 13px;
+}
+
+.icon.lg {
+  font-size: 20px;
+}
+
+/* Safety net for any legacy raw SVG that might still appear */
 svg {
   width: 16px;
   height: 16px;
@@ -1025,28 +1042,7 @@ a:hover {
   margin-bottom: 8px;
 }
 
-/* ---------- Icon helper ---------- */
-.icon {
-  display: inline-flex;
-  align-items: center;
-  vertical-align: middle;
-}
-
-.icon svg {
-  width: 18px;
-  height: 18px;
-  stroke-width: 1.8;
-}
-
-.icon.sm svg {
-  width: 14px;
-  height: 14px;
-}
-
-.icon.lg svg {
-  width: 24px;
-  height: 24px;
-}
+/* (icon helper defined near top of file) */
 
 /* ---------- Form group ---------- */
 .form-group {
@@ -1168,58 +1164,42 @@ a:hover {
   color: var(--danger);
 }
 
-.icon-circle svg {
-  width: 16px;
-  height: 16px;
+/* Font-size based sizing for emoji icons inside each container */
+.icon-circle {
+  font-size: 16px;
 }
 
 .icon-circle.lg {
   width: 48px;
   height: 48px;
+  font-size: 22px;
 }
 
-.icon-circle.lg svg {
-  width: 22px;
-  height: 22px;
+.stat-card .stat-icon {
+  font-size: 20px;
 }
 
-.stat-card .stat-icon svg {
-  width: 22px;
-  height: 22px;
+.success-icon {
+  font-size: 32px;
 }
 
-.success-icon svg {
-  width: 30px;
-  height: 30px;
+.pill .icon,
+.chip .icon,
+.tag .icon,
+.rating-badge .icon,
+.meta .icon,
+.btn .icon,
+.timeline-step .dot .icon {
+  font-size: 12.5px;
 }
 
-.pill svg,
-.chip svg,
-.tag svg,
-.rating-badge svg,
-.meta svg {
-  width: 14px;
-  height: 14px;
-}
-
-.btn svg {
-  width: 14px;
-  height: 14px;
-}
-
-.timeline-step .dot svg {
-  width: 14px;
-  height: 14px;
-}
-
-.notice svg,
-.section-heading svg,
-.slider-row label svg,
-.title-chip svg,
-.filter svg,
-.tabs .tab svg {
-  width: 16px;
-  height: 16px;
+.section-heading .icon,
+.slider-row label .icon,
+.title-chip .icon,
+.notice .icon,
+.filter .icon,
+.tabs .tab .icon {
+  font-size: 14px;
 }
 
 /* ---------- Icon pills / key-value rows ---------- */
@@ -1377,6 +1357,140 @@ a:hover {
 
 .icon-btn:hover {
   background: var(--navy-soft);
+}
+
+/* ---------- Back-link button ---------- */
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--white);
+  color: var(--navy);
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.back-link:hover {
+  background: var(--navy-soft);
+  text-decoration: none;
+}
+
+/* ---------- Detail view (restaurant) ---------- */
+.detail-head {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.detail-head .icon-circle {
+  width: 54px;
+  height: 54px;
+  font-size: 22px;
+  background: var(--cream-dark);
+  color: var(--navy);
+}
+
+.detail-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.detail-meta-grid .kv {
+  margin: 0;
+}
+
+/* ---------- Modal ---------- */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.modal.hidden {
+  display: none !important;
+}
+
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 25, 40, 0.45);
+}
+
+.modal-card {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 460px;
+  background: var(--white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  padding: 22px 22px 24px;
+  border: 1px solid var(--border);
+  max-height: 86vh;
+  overflow: auto;
+}
+
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.modal-head h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.modal-card .icon-btn {
+  width: 30px;
+  height: 30px;
+  font-size: 14px;
+  border: 1px solid var(--border);
+  background: var(--white);
+}
+
+/* ---------- Comments list ---------- */
+.comment-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.comment-list li {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--sage);
+  border-radius: var(--radius-sm);
+  background: var(--white);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.comment-list li.bad {
+  border-left-color: var(--amber);
+}
+
+.comment-list li .comment-icon {
+  font-size: 16px;
+  line-height: 1;
+  margin-top: 2px;
 }
 
 /* ---------- Responsive ---------- */

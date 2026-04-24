@@ -75,18 +75,27 @@
         <div class="timeline" id="trkTimeline"></div>
       </div>
 
-      <a href="dashboard.html" class="btn secondary">Back to Dashboard</a>
+      <div class="flex flex-wrap" style="gap: 10px">
+        <a href="dashboard.html" class="btn secondary">
+          <span>←</span> Back to Dashboard
+        </a>
+        <button class="btn" id="contactOfficerBtn">
+          <span>🏛</span> Find Handling Officer
+        </button>
+      </div>
     </main>
 
     <script src="/static/script.js"></script>
     <script>
-      qs("#navbar").innerHTML = renderNavbar("track", "consumer");
+      qs("#navbar").innerHTML = renderNavbar("home");
       qs("#idIcon").innerHTML = icon("document", "sm");
       qs("#dateIcon").innerHTML = icon("clock", "sm");
       qs("#timelineIcon").innerHTML = Icons.trending;
       qs("#kv1").innerHTML = Icons.shield;
       qs("#kv2").innerHTML = Icons.badge;
       qs("#kv3").innerHTML = Icons.stopwatch;
+
+      qs("#contactOfficerBtn").addEventListener("click", openOfficerModal);
 
       function getParam(name) {
         return new URLSearchParams(window.location.search).get(name);
