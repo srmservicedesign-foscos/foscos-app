@@ -3,48 +3,59 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Report Food Safety Issue | FoSCoS Grievance Portal</title>
+    <title>Consumer Grievance Portal | Report a Food Safety Issue</title>
+    <link
+      rel="preconnect"
+      href="https://fonts.googleapis.com"
+      crossorigin
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="/static/styles.css" />
   </head>
   <body>
-    <header class="app-header">
-      <div class="brand">
-        <span class="logo">F</span>
-        <span>FoSCoS Grievance Portal</span>
+    <div id="navbar"></div>
+
+    <section class="hero">
+      <div class="hero-inner">
+        <h1>Report a Food Safety Issue</h1>
+        <p>
+          Your feedback safeguards public health. Search for a registered
+          restaurant or scan the on-premise QR code to share your experience.
+        </p>
+        <div class="searchbar">
+          <span class="icon" id="heroSearchIcon"></span>
+          <input
+            id="searchInput"
+            type="text"
+            placeholder="Search by restaurant name or FSSAI license number"
+            aria-label="Search restaurants"
+          />
+          <button class="btn" id="heroSearchBtn">Search</button>
+        </div>
       </div>
-      <nav>
-        <a href="dashboard.html">My Complaints</a>
-      </nav>
-    </header>
+    </section>
 
     <main class="container">
-      <h1 class="page-title">Report Food Safety Issue</h1>
-      <p class="subtitle">
-        Scan or select the restaurant you visited to share your feedback.
-      </p>
-
-      <div class="searchbar">
-        <input
-          id="searchInput"
-          class="input"
-          type="text"
-          placeholder="Search by restaurant name or license number"
-        />
-      </div>
-
       <section id="nearbySection">
-        <h3 style="color: var(--green-dark)">Nearby Restaurants</h3>
-        <div id="restaurantList"></div>
+        <h2 class="section-heading">
+          <span class="icon" id="nearbyIcon"></span>
+          Nearby Registered Restaurants
+        </h2>
+        <div class="restaurant-grid" id="restaurantList"></div>
       </section>
 
       <section id="notFoundSection" class="hidden">
         <div class="card">
           <h3>No matching restaurant found</h3>
           <p class="muted">
-            Couldn't find the place you visited? You can still report an
-            unregistered business.
+            Couldn't find the place you visited? You can report an unregistered
+            business for review by a Food Safety Officer.
           </p>
           <button id="openUnregBtn" class="btn">
+            <span id="reportIcon"></span>
             Report Unregistered Business
           </button>
         </div>
@@ -53,10 +64,15 @@
       <section id="unregFormSection" class="hidden">
         <div class="card">
           <h3>Report Unregistered Business</h3>
+          <p class="muted" style="margin-top: 4px">
+            This report will be forwarded to the Food Safety Officer for the
+            region.
+          </p>
+
           <label class="label" for="unregName">Restaurant name</label>
           <input id="unregName" class="input" type="text" />
 
-          <label class="label" for="unregLocation">Location</label>
+          <label class="label" for="unregLocation">Location / Address</label>
           <input id="unregLocation" class="input" type="text" />
 
           <label class="label" for="unregImages">Upload images</label>
@@ -65,8 +81,8 @@
           <label class="label" for="unregComments">Comments</label>
           <textarea id="unregComments" class="textarea"></textarea>
 
-          <div style="margin-top: 14px; display: flex; gap: 10px">
-            <button id="unregSubmit" class="btn">Submit</button>
+          <div style="margin-top: 18px; display: flex; gap: 10px">
+            <button id="unregSubmit" class="btn">Submit Report</button>
             <button id="unregCancel" class="btn secondary">Cancel</button>
           </div>
         </div>
@@ -74,32 +90,42 @@
 
       <section id="publicViewSection" class="hidden">
         <div class="card">
-          <div class="flex-between">
+          <div class="card-row">
             <div>
               <h3 id="pvName"></h3>
               <div class="meta" id="pvLicense"></div>
+              <div class="meta" id="pvLocation" style="margin-top: 4px"></div>
             </div>
             <span class="rating-badge" id="pvRating"></span>
           </div>
-          <div style="margin-top: 10px">
+          <div style="margin-top: 12px">
             <span class="stars" id="pvStars"></span>
           </div>
 
-          <h4 style="margin-top: 16px; color: var(--green-dark)">
+          <h4 class="section-heading" style="margin-top: 22px; font-size: 16px">
+            <span class="icon" id="commentsIcon"></span>
             Public Comments
           </h4>
-          <ul id="pvComments" style="padding-left: 18px"></ul>
+          <ul id="pvComments" style="padding-left: 18px; margin-top: 6px"></ul>
 
-          <div style="margin-top: 14px; display: flex; gap: 10px">
-            <button id="pvRateBtn" class="btn">Rate this restaurant</button>
+          <div style="margin-top: 18px; display: flex; gap: 10px">
+            <button id="pvRateBtn" class="btn">Rate this Restaurant</button>
             <button id="pvBackBtn" class="btn secondary">Back</button>
           </div>
         </div>
       </section>
+
+      <div class="spacer-lg"></div>
     </main>
 
     <script src="/static/script.js"></script>
     <script>
+      qs("#navbar").innerHTML = renderNavbar("home", "consumer");
+      qs("#heroSearchIcon").innerHTML = Icons.search;
+      qs("#nearbyIcon").innerHTML = Icons.map;
+      qs("#reportIcon").innerHTML = Icons.flag;
+      qs("#commentsIcon").innerHTML = Icons.message;
+
       const listEl = qs("#restaurantList");
       const searchEl = qs("#searchInput");
       const notFoundEl = qs("#notFoundSection");
@@ -117,23 +143,31 @@
         listEl.innerHTML = list
           .map(
             (r) => `
-            <div class="card" data-id="${r.id}" style="cursor:pointer">
-              <div class="card-row">
-                <div>
-                  <h3>${r.name}</h3>
-                  <div class="meta">${r.location}</div>
-                  <div class="meta">License: ${r.license}</div>
+            <article class="restaurant-card" data-id="${r.id}">
+              <div class="image">
+                <span class="monogram">${initials(r.name)}</span>
+                <span class="badge-top">
+                  ${icon("star", "sm")} ${r.rating.toFixed(1)}
+                </span>
+              </div>
+              <div class="body">
+                <h3>${r.name}</h3>
+                <div class="meta">
+                  ${icon("map", "sm")} ${r.location}
                 </div>
-                <div style="text-align:right">
+                <div class="meta" style="margin-top: 4px">
+                  ${icon("leaf", "sm")} ${r.cuisine}
+                </div>
+                <div class="flex-between" style="margin-top: 12px">
+                  <span class="tag">FSSAI ${r.license}</span>
                   <span class="stars">${renderStars(r.rating)}</span>
-                  <div class="rating-badge">${r.rating.toFixed(1)} / 5</div>
                 </div>
               </div>
-            </div>`
+            </article>`
           )
           .join("");
 
-        qsa("#restaurantList .card").forEach((card) => {
+        qsa(".restaurant-card", listEl).forEach((card) => {
           card.addEventListener("click", () => {
             const id = card.dataset.id;
             const r = MOCK_RESTAURANTS.find((x) => x.id === id);
@@ -147,15 +181,24 @@
         notFoundEl.classList.add("hidden");
         publicViewEl.classList.remove("hidden");
         qs("#pvName").textContent = r.name;
-        qs("#pvLicense").textContent = `License: ${r.license}`;
-        qs("#pvRating").textContent = `${r.rating.toFixed(1)} / 5`;
+        qs("#pvLicense").innerHTML =
+          `${icon("shield", "sm")} FSSAI License: ${r.license}`;
+        qs("#pvLocation").innerHTML =
+          `${icon("map", "sm")} ${r.location}`;
+        qs("#pvRating").innerHTML =
+          `${icon("star", "sm")} ${r.rating.toFixed(1)} / 5`;
         qs("#pvStars").textContent = renderStars(r.rating);
         qs("#pvComments").innerHTML = r.comments
           .map(
             (c) =>
-              `<li><span class="tag">${
-                c.type === "good" ? "Positive" : "Concern"
-              }</span> ${c.text}</li>`
+              `<li style="margin-bottom: 6px">
+                 <span class="tag" style="background: ${
+                   c.type === "good" ? "var(--sage-soft)" : "var(--amber-soft)"
+                 }; border-color: ${
+                c.type === "good" ? "var(--sage)" : "var(--amber)"
+              }">${c.type === "good" ? "Positive" : "Concern"}</span>
+                 ${c.text}
+               </li>`
           )
           .join("");
         qs("#pvRateBtn").onclick = () => {
@@ -166,6 +209,7 @@
           publicViewEl.classList.add("hidden");
           nearbyEl.classList.remove("hidden");
         };
+        window.scrollTo({ top: 0, behavior: "smooth" });
       }
 
       function filterRestaurants(q) {
@@ -180,6 +224,11 @@
 
       searchEl.addEventListener("input", (e) => {
         renderRestaurants(filterRestaurants(e.target.value));
+      });
+
+      qs("#heroSearchBtn").addEventListener("click", () => {
+        renderRestaurants(filterRestaurants(searchEl.value));
+        nearbyEl.scrollIntoView({ behavior: "smooth" });
       });
 
       qs("#openUnregBtn").addEventListener("click", () => {

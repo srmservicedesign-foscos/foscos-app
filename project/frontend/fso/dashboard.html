@@ -3,69 +3,83 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>FSO Admin Dashboard | FoSCoS Grievance Portal</title>
+    <title>FSO Admin | Consumer Grievance Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="/static/styles.css" />
   </head>
   <body>
-    <header class="app-header">
-      <div class="brand">
-        <span class="logo">F</span>
-        <span>FSO Admin Dashboard</span>
-      </div>
-      <nav>
-        <a href="/consumer/index.html">Consumer Site</a>
-        <a href="/fbo/dashboard.html">FBO View</a>
-      </nav>
-    </header>
+    <div id="navbar"></div>
 
     <main class="container">
-      <h1 class="page-title">All Complaints</h1>
+      <h1 class="page-title">Food Safety Officer — Admin Panel</h1>
       <p class="subtitle">
-        Investigate complaints and take regulatory action on Food Business
-        Operators.
+        Investigate consumer complaints, review registered Food Business
+        Operators, and take regulatory action.
       </p>
 
-      <div class="flex" style="margin-bottom: 10px">
-        <button class="btn secondary small" data-filter="all">All</button>
-        <button class="btn secondary small" data-filter="Pending">
-          Pending
+      <div class="tabs">
+        <button class="tab active" data-tab="complaints">
+          <span id="tabIc1"></span> Complaints
         </button>
-        <button class="btn secondary small" data-filter="Under Review">
-          Under Review
-        </button>
-        <button class="btn secondary small" data-filter="Action Taken">
-          Action Taken
+        <button class="tab" data-tab="fbo">
+          <span id="tabIc2"></span> FBO Database
         </button>
       </div>
 
-      <div id="complaintsList"></div>
+      <!-- Complaints tab -->
+      <section id="tab-complaints">
+        <div class="filter-row">
+          <button class="filter active" data-filter="all">All</button>
+          <button class="filter" data-filter="Pending">Pending</button>
+          <button class="filter" data-filter="Under Review">
+            Under Review
+          </button>
+          <button class="filter" data-filter="Action Taken">
+            Action Taken
+          </button>
+        </div>
 
-      <h1 class="page-title" style="margin-top: 30px">
-        Registered Food Businesses
-      </h1>
+        <div id="complaintsList"></div>
+      </section>
 
-      <table class="table">
-        <thead>
-          <tr>
-            <th>License #</th>
-            <th>Name</th>
-            <th>Location</th>
-            <th>Complaints</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody id="fboTable"></tbody>
-      </table>
+      <!-- FBO tab -->
+      <section id="tab-fbo" class="hidden">
+        <h2 class="section-heading">
+          <span id="buildingIcon"></span>
+          Registered Food Businesses
+        </h2>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>License #</th>
+              <th>Name</th>
+              <th>Location</th>
+              <th>Complaints</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="fboTable"></tbody>
+        </table>
 
-      <section id="fboDetail" class="hidden" style="margin-top: 20px">
-        <h3 style="color: var(--green-dark)" id="fboDetailTitle"></h3>
-        <div id="fboDetailComplaints"></div>
-        <button id="closeFboDetail" class="btn secondary small">Close</button>
+        <section id="fboDetail" class="hidden" style="margin-top: 24px">
+          <h3 id="fboDetailTitle" class="section-heading"></h3>
+          <div id="fboDetailComplaints"></div>
+          <button id="closeFboDetail" class="btn secondary small">Close</button>
+        </section>
       </section>
     </main>
 
     <script src="/static/script.js"></script>
     <script>
+      qs("#navbar").innerHTML = renderNavbar("complaints", "fso");
+      qs("#tabIc1").innerHTML = Icons.clipboard;
+      qs("#tabIc2").innerHTML = Icons.building;
+      qs("#buildingIcon").innerHTML = Icons.building;
+
       const ALL_COMPLAINTS = [
         {
           id: "C001",
@@ -123,28 +137,34 @@
             <div class="card-row">
               <div>
                 <h3>${c.restaurant}</h3>
-                <div class="meta">License: ${c.license}</div>
-                <div class="meta">Complaint ID: ${c.id}</div>
+                <div class="meta">${icon("shield", "sm")} FSSAI: ${
+                  c.license
+                }</div>
+                <div class="meta" style="margin-top: 4px">
+                  ${icon("clipboard", "sm")} Complaint ID: ${c.id}
+                </div>
               </div>
-              <div style="text-align:right">
-                <div class="rating-badge">${c.rating.toFixed(1)} / 5</div>
-                <div style="margin-top:6px">${statusChip(c.status)}</div>
+              <div style="text-align: right">
+                <span class="rating-badge">
+                  ${icon("star", "sm")} ${c.rating.toFixed(1)} / 5
+                </span>
+                <div style="margin-top: 8px">${statusChip(c.status)}</div>
               </div>
             </div>
-            <p style="margin: 10px 0">${c.complaint}</p>
-            <div class="muted" style="font-size: 13px">
-              <strong>Consumer:</strong> ${c.consumer_name}
-              &middot; ${c.consumer_phone}
+            <p style="margin: 12px 0">${c.complaint}</p>
+            <div class="muted" style="font-size: 13px; border-top: 1px dashed var(--border); padding-top: 10px">
+              ${icon("user", "sm")} <strong>${c.consumer_name}</strong>
+              &middot; ${icon("phone", "sm")} ${c.consumer_phone}
             </div>
-            <div class="flex" style="margin-top: 10px; flex-wrap: wrap">
-              <button class="btn small warning" data-action="warning">
-                Issue Warning
+            <div class="flex flex-wrap" style="margin-top: 12px; gap: 8px">
+              <button class="btn small" data-action="warning">
+                ${icon("alert", "sm")} Issue Warning
               </button>
-              <button class="btn small" data-action="inspection">
-                Assign Inspection
+              <button class="btn small navy" data-action="inspection">
+                ${icon("search_doc", "sm")} Assign Inspection
               </button>
               <button class="btn small secondary" data-action="resolve">
-                Mark Resolved
+                ${icon("check", "sm")} Mark Resolved
               </button>
             </div>
             <div class="action-slot"></div>
@@ -152,6 +172,7 @@
       }
 
       const listEl = qs("#complaintsList");
+
       function renderComplaints(filter = "all") {
         const data =
           filter === "all"
@@ -166,24 +187,46 @@
       }
       renderComplaints();
 
-      qsa("[data-filter]").forEach((b) => {
-        b.addEventListener("click", () => renderComplaints(b.dataset.filter));
+      qsa(".filter-row .filter").forEach((b) => {
+        b.addEventListener("click", () => {
+          qsa(".filter-row .filter").forEach((x) =>
+            x.classList.remove("active")
+          );
+          b.classList.add("active");
+          renderComplaints(b.dataset.filter);
+        });
       });
 
       listEl.addEventListener("click", (e) => {
         const card = e.target.closest(".card");
         if (!card) return;
-        const action = e.target.dataset.action;
-        if (!action) return;
+        const btn = e.target.closest("[data-action]");
+        if (!btn) return;
 
         const slot = card.querySelector(".action-slot");
         const id = card.dataset.id;
-        const msg = {
-          warning: `⚠️ Warning issued for complaint ${id}`,
-          inspection: `🔍 Inspection assigned for complaint ${id}`,
-          resolve: `✓ Complaint ${id} marked resolved`,
+        const action = btn.dataset.action;
+        const cls = {
+          warning: "notice",
+          inspection: "notice navy",
+          resolve: "notice sage",
         }[action];
-        slot.innerHTML = `<p class="muted" style="margin-top:8px">${msg}</p>`;
+        const msg = {
+          warning: `Warning issued to FBO for complaint ${id}.`,
+          inspection: `Inspection assigned for complaint ${id}.`,
+          resolve: `Complaint ${id} marked resolved.`,
+        }[action];
+        slot.innerHTML =
+          `<div class="${cls}" style="margin-top: 10px">
+             ${icon(
+               action === "resolve"
+                 ? "check"
+                 : action === "inspection"
+                 ? "search_doc"
+                 : "alert",
+               "sm"
+             )} ${msg}
+           </div>`;
       });
 
       // FBO table
@@ -208,13 +251,14 @@
       ).join("");
 
       tableEl.addEventListener("click", (e) => {
-        if (!e.target.dataset.license) return;
-        const lic = e.target.dataset.license;
+        const btn = e.target.closest("[data-license]");
+        if (!btn) return;
+        const lic = btn.dataset.license;
         const fbo = FBOS.find((f) => f.license === lic);
         const items = complaintsForLicense(lic);
         qs("#fboDetail").classList.remove("hidden");
-        qs("#fboDetailTitle").textContent =
-          `Complaints for ${fbo.name} (${fbo.license})`;
+        qs("#fboDetailTitle").innerHTML =
+          `${icon("building")} Complaints for ${fbo.name} (${fbo.license})`;
         qs("#fboDetailComplaints").innerHTML = items.length
           ? items.map(complaintCard).join("")
           : '<div class="card"><p class="muted">No complaints.</p></div>';
@@ -224,6 +268,22 @@
       qs("#closeFboDetail").addEventListener("click", () => {
         qs("#fboDetail").classList.add("hidden");
       });
+
+      // Tab switching
+      qsa(".tabs .tab").forEach((t) => {
+        t.addEventListener("click", () => {
+          qsa(".tabs .tab").forEach((x) => x.classList.remove("active"));
+          t.classList.add("active");
+          const name = t.dataset.tab;
+          qs("#tab-complaints").classList.toggle("hidden", name !== "complaints");
+          qs("#tab-fbo").classList.toggle("hidden", name !== "fbo");
+        });
+      });
+
+      // Deep link: #fbo
+      if (location.hash === "#fbo") {
+        qs('.tab[data-tab="fbo"]').click();
+      }
     </script>
   </body>
 </html>

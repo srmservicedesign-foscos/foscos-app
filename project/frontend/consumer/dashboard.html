@@ -3,33 +3,35 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>My Complaints | FoSCoS Grievance Portal</title>
+    <title>My Complaints | Consumer Grievance Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="/static/styles.css" />
   </head>
   <body>
-    <header class="app-header">
-      <div class="brand">
-        <span class="logo">F</span>
-        <span>FoSCoS Grievance Portal</span>
-      </div>
-      <nav>
-        <a href="index.html">Home</a>
-      </nav>
-    </header>
+    <div id="navbar"></div>
 
     <main class="container">
       <h1 class="page-title">Consumer Dashboard</h1>
+      <p class="subtitle">
+        Sign in with your phone number to view complaints you have filed and
+        track their status.
+      </p>
 
       <!-- Login step -->
       <section id="loginStep">
-        <div class="card">
-          <h3>Login</h3>
-          <p class="muted">
-            Enter your phone number. We'll send an OTP to verify.
+        <div class="card" style="max-width: 520px">
+          <h3>Sign In</h3>
+          <p class="muted" style="margin-top: 4px">
+            Enter your registered phone number. A one-time password will be
+            sent via SMS.
           </p>
           <label class="label" for="loginPhone">Phone number</label>
-          <input id="loginPhone" class="input" type="tel" />
-          <button id="sendOtpBtn" class="btn block" style="margin-top: 12px">
+          <input id="loginPhone" class="input" type="tel" placeholder="+91 XXXXX XXXXX" />
+          <button id="sendOtpBtn" class="btn block" style="margin-top: 16px">
             Send OTP
           </button>
         </div>
@@ -37,10 +39,10 @@
 
       <!-- OTP step -->
       <section id="otpStep" class="hidden">
-        <div class="card">
+        <div class="card" style="max-width: 520px">
           <h3>Enter OTP</h3>
           <p class="muted">
-            OTP sent to <span id="otpPhoneLabel"></span>.
+            OTP sent to <strong id="otpPhoneLabel"></strong>.
           </p>
           <div class="otp-boxes" id="otpBoxes">
             <input type="text" inputmode="numeric" maxlength="1" />
@@ -57,18 +59,25 @@
       <!-- Dashboard content -->
       <section id="dashboardStep" class="hidden">
         <div class="notice">
-          🔔 FSO may contact you for verification of submitted complaints.
+          <span id="bellIcon"></span>
+          The Food Safety Officer may contact you for verification of
+          submitted complaints.
         </div>
 
-        <h3 style="color: var(--green-dark); margin-top: 18px">
-          My Complaints
-        </h3>
+        <h2 class="section-heading">
+          <span id="listIcon"></span>
+          Complaint History
+        </h2>
         <div id="complaintList"></div>
       </section>
     </main>
 
     <script src="/static/script.js"></script>
     <script>
+      qs("#navbar").innerHTML = renderNavbar("dashboard", "consumer");
+      qs("#bellIcon").innerHTML = Icons.bell;
+      qs("#listIcon").innerHTML = Icons.list;
+
       qs("#sendOtpBtn").addEventListener("click", () => {
         const phone = qs("#loginPhone").value.trim();
         if (!/^\+?\d{10,13}$/.test(phone.replace(/\s|-/g, ""))) {
@@ -98,7 +107,8 @@
         const all = [...user, ...MOCK_COMPLAINTS];
         const listEl = qs("#complaintList");
         if (!all.length) {
-          listEl.innerHTML = `<div class="card"><p class="muted">No complaints yet.</p></div>`;
+          listEl.innerHTML =
+            '<div class="card"><p class="muted">No complaints filed yet.</p></div>';
           return;
         }
         listEl.innerHTML = all
@@ -108,16 +118,22 @@
               <div class="card-row">
                 <div>
                   <h3>${c.restaurant}</h3>
-                  <div class="meta">Filed: ${c.date}</div>
-                  <div class="meta">${c.comment || ""}</div>
+                  <div class="meta">${icon("clock", "sm")} Filed: ${c.date}</div>
+                  <div class="meta" style="margin-top: 4px">${
+                    c.comment || ""
+                  }</div>
                 </div>
                 <div style="text-align:right">
-                  <div class="rating-badge">${c.rating.toFixed(1)} / 5</div>
-                  <div style="margin-top:6px">${statusChip(c.status)}</div>
+                  <span class="rating-badge">
+                    ${icon("star", "sm")} ${c.rating.toFixed(1)} / 5
+                  </span>
+                  <div style="margin-top:8px">${statusChip(c.status)}</div>
                 </div>
               </div>
-              <div style="margin-top:10px">
-                <a href="track.html?id=${c.id}" class="btn small">Track</a>
+              <div style="margin-top: 12px">
+                <a href="track.html?id=${c.id}" class="btn secondary small">
+                  Track ${icon("arrow_right", "sm")}
+                </a>
               </div>
             </div>`
           )

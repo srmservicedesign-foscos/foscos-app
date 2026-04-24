@@ -3,43 +3,53 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>FBO Dashboard | FoSCoS Grievance Portal</title>
+    <title>FBO Dashboard | Consumer Grievance Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="/static/styles.css" />
   </head>
   <body>
-    <header class="app-header">
-      <div class="brand">
-        <span class="logo">F</span>
-        <span>FBO Dashboard</span>
-      </div>
-      <nav>
-        <a href="/consumer/index.html">Consumer Site</a>
-      </nav>
-    </header>
+    <div id="navbar"></div>
 
     <main class="container">
-      <h1 class="page-title">Customer Feedback</h1>
+      <h1 class="page-title">Food Business Operator Dashboard</h1>
       <p class="subtitle">
-        Review feedback from verified customers. Consumer identity is kept
-        confidential.
+        Review verified customer feedback for your establishment and take
+        action. Consumer identity is protected and not shared.
       </p>
 
-      <div class="notice">
-        🔒 Consumer names and phone numbers are not shared with FBOs.
+      <div class="notice navy">
+        <span id="shieldIcon"></span>
+        Consumer names and phone numbers are withheld to ensure confidential
+        reporting.
+      </div>
+
+      <div class="filter-row">
+        <button class="filter active" data-filter="all">All Feedback</button>
+        <button class="filter" data-filter="good">Good</button>
+        <button class="filter" data-filter="review">Under Review</button>
+        <button class="filter" data-filter="flag">Flagged</button>
       </div>
 
       <div id="feedbackList"></div>
     </main>
 
     <template id="resolveTemplate">
-      <div class="card" style="background: var(--green-soft)">
-        <h4 style="margin: 0 0 8px; color: var(--green-dark)">
-          Mark as Resolved
-        </h4>
+      <div
+        class="card"
+        style="background: var(--sage-soft); border-color: var(--sage); margin-top: 10px"
+      >
+        <h4>Mark as Resolved</h4>
         <label class="label">Improvement note</label>
-        <textarea class="textarea note-input"></textarea>
-        <div style="margin-top: 8px; display: flex; gap: 8px">
-          <button class="btn small submit-resolve">Submit</button>
+        <textarea
+          class="textarea note-input"
+          placeholder="What corrective action did you take?"
+        ></textarea>
+        <div style="margin-top: 10px; display: flex; gap: 8px">
+          <button class="btn small sage submit-resolve">Submit</button>
           <button class="btn small secondary cancel-resolve">Cancel</button>
         </div>
       </div>
@@ -47,6 +57,9 @@
 
     <script src="/static/script.js"></script>
     <script>
+      qs("#navbar").innerHTML = renderNavbar("feedback", "fbo");
+      qs("#shieldIcon").innerHTML = Icons.shield;
+
       const FBO_FEEDBACK = [
         {
           id: "F001",
@@ -54,6 +67,7 @@
           comment: "Loved the food and hygiene.",
           images: [],
           type: "good",
+          state: "good",
         },
         {
           id: "F002",
@@ -61,6 +75,7 @@
           comment: "Floor was dirty near the kitchen entrance.",
           images: ["evidence_01.jpg", "bill_01.jpg"],
           type: "bad",
+          state: "review",
         },
         {
           id: "F003",
@@ -68,6 +83,7 @@
           comment: "Food tasted stale, not fresh.",
           images: ["evidence_02.jpg"],
           type: "bad",
+          state: "review",
         },
         {
           id: "F004",
@@ -75,83 +91,143 @@
           comment: "Service was quick and staff was polite.",
           images: [],
           type: "good",
+          state: "good",
         },
       ];
+
+      function stateChip(state) {
+        if (state === "good")
+          return `<span class="chip good">${icon(
+            "check",
+            "sm"
+          )} Good</span>`;
+        if (state === "review")
+          return `<span class="chip review">${icon(
+            "clock",
+            "sm"
+          )} Under Review</span>`;
+        if (state === "flag")
+          return `<span class="chip flag">${icon(
+            "flag",
+            "sm"
+          )} Flagged</span>`;
+        return "";
+      }
 
       function feedbackCard(f) {
         const imagesHtml = f.images.length
           ? f.images
-              .map((img) => `<span class="image-thumb">${img}</span>`)
+              .map(
+                (img) =>
+                  `<span class="image-thumb">${icon(
+                    "image",
+                    "sm"
+                  )}<br/>${img}</span>`
+              )
               .join("")
-          : '<span class="muted">No images</span>';
+          : '<span class="muted" style="font-size: 12px">No images attached</span>';
 
         const actionsHtml =
           f.type === "good"
-            ? `<button class="btn small thank-btn">Send Thank You</button>`
-            : `<button class="btn small warning resolve-btn">Mark as Resolved</button>
-               <button class="btn small secondary flag-btn">Flag as Incorrect</button>`;
+            ? `<button class="btn small thank-btn">
+                 ${icon("heart", "sm")} Send Thank You
+               </button>`
+            : `<button class="btn small resolve-btn">
+                 ${icon("check", "sm")} Mark as Resolved
+               </button>
+               <button class="btn small secondary flag-btn">
+                 ${icon("flag", "sm")} Flag as Incorrect
+               </button>`;
 
         return `
-          <div class="card" data-id="${f.id}">
+          <div class="card" data-id="${f.id}" data-state="${f.state}">
             <div class="card-row">
               <div>
-                <span class="stars">${renderStars(f.rating)}</span>
-                <span class="rating-badge" style="margin-left: 6px">
-                  ${f.rating.toFixed(1)} / 5
-                </span>
+                <div class="flex" style="gap: 10px; margin-bottom: 6px">
+                  <span class="stars">${renderStars(f.rating)}</span>
+                  <span class="rating-badge">
+                    ${icon("star", "sm")} ${f.rating.toFixed(1)} / 5
+                  </span>
+                </div>
+                <div class="muted" style="font-size: 12px">
+                  Feedback ID: ${f.id}
+                </div>
               </div>
-              <span class="tag">${f.type === "good" ? "Positive" : "Concern"}</span>
+              <div class="state-chip">${stateChip(f.state)}</div>
             </div>
-            <p style="margin: 10px 0">${f.comment}</p>
-            <div style="margin-bottom: 10px">${imagesHtml}</div>
-            <div class="flex" style="flex-wrap: wrap">${actionsHtml}</div>
+            <p style="margin: 12px 0">${f.comment}</p>
+            <div style="margin-bottom: 12px">${imagesHtml}</div>
+            <div class="flex flex-wrap" style="gap: 8px">${actionsHtml}</div>
             <div class="resolve-slot"></div>
           </div>`;
       }
 
       const listEl = qs("#feedbackList");
-      listEl.innerHTML = FBO_FEEDBACK.map(feedbackCard).join("");
+
+      function renderList(filter = "all") {
+        const data =
+          filter === "all"
+            ? FBO_FEEDBACK
+            : FBO_FEEDBACK.filter((f) => f.state === filter);
+        if (!data.length) {
+          listEl.innerHTML =
+            '<div class="card"><p class="muted">No feedback matches this filter.</p></div>';
+          return;
+        }
+        listEl.innerHTML = data.map(feedbackCard).join("");
+      }
+
+      renderList();
+
+      qsa(".filter-row .filter").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          qsa(".filter-row .filter").forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+          renderList(btn.dataset.filter);
+        });
+      });
 
       listEl.addEventListener("click", (e) => {
         const card = e.target.closest(".card");
         if (!card) return;
 
-        if (e.target.classList.contains("thank-btn")) {
-          alert("Thank-you note sent to customer.");
-          e.target.disabled = true;
-          e.target.textContent = "✓ Thank You Sent";
+        if (e.target.closest(".thank-btn")) {
+          const btn = e.target.closest(".thank-btn");
+          alert("Thank-you note sent to the consumer.");
+          btn.disabled = true;
+          btn.innerHTML = `${icon("check", "sm")} Thank You Sent`;
         }
 
-        if (e.target.classList.contains("flag-btn")) {
+        if (e.target.closest(".flag-btn")) {
           if (confirm("Flag this feedback as incorrect?")) {
-            card.style.opacity = "0.6";
-            card.querySelector(".card-row").insertAdjacentHTML(
-              "beforeend",
-              '<span class="chip flag">Flagged</span>'
-            );
-            e.target.disabled = true;
+            card.dataset.state = "flag";
+            card.querySelector(".state-chip").innerHTML = stateChip("flag");
+            card.style.opacity = "0.75";
+            e.target.closest(".flag-btn").disabled = true;
           }
         }
 
-        if (e.target.classList.contains("resolve-btn")) {
+        if (e.target.closest(".resolve-btn")) {
           const tpl = qs("#resolveTemplate").content.cloneNode(true);
           card.querySelector(".resolve-slot").replaceChildren(tpl);
         }
 
-        if (e.target.classList.contains("cancel-resolve")) {
+        if (e.target.closest(".cancel-resolve")) {
           card.querySelector(".resolve-slot").replaceChildren();
         }
 
-        if (e.target.classList.contains("submit-resolve")) {
+        if (e.target.closest(".submit-resolve")) {
           const note = card.querySelector(".note-input").value.trim();
           if (!note) {
             alert("Please add an improvement note.");
             return;
           }
           card.querySelector(".resolve-slot").innerHTML =
-            `<p class="muted" style="margin-top:8px">
-               ✓ Resolved. Note: "${note}"
-             </p>`;
+            `<div class="notice sage" style="margin-top: 10px">
+               ${icon("check", "sm")} Resolved. Note: "${note}"
+             </div>`;
+          card.dataset.state = "good";
+          card.querySelector(".state-chip").innerHTML = stateChip("good");
           card
             .querySelectorAll(".resolve-btn, .flag-btn")
             .forEach((b) => (b.disabled = true));

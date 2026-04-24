@@ -3,39 +3,47 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Track Complaint | FoSCoS Grievance Portal</title>
+    <title>Track Complaint | Consumer Grievance Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="/static/styles.css" />
   </head>
   <body>
-    <header class="app-header">
-      <div class="brand">
-        <span class="logo">F</span>
-        <span>FoSCoS Grievance Portal</span>
-      </div>
-      <nav>
-        <a href="dashboard.html">My Complaints</a>
-      </nav>
-    </header>
+    <div id="navbar"></div>
 
     <main class="container">
-      <h1 class="page-title">Track Complaint</h1>
+      <h1 class="page-title">Complaint Status</h1>
+      <p class="subtitle">
+        Follow your complaint through its review lifecycle. You will be
+        notified when the status changes.
+      </p>
 
       <div class="card">
         <div class="card-row">
           <div>
             <h3 id="trkRestaurant">--</h3>
-            <div class="meta">Complaint ID: <span id="trkId">--</span></div>
-            <div class="meta">Filed: <span id="trkDate">--</span></div>
+            <div class="meta">
+              <span id="idIcon"></span> Complaint ID: <span id="trkId">--</span>
+            </div>
+            <div class="meta" style="margin-top: 4px">
+              <span id="dateIcon"></span> Filed: <span id="trkDate">--</span>
+            </div>
           </div>
-          <div style="text-align:right">
-            <div class="rating-badge" id="trkRating">-- / 5</div>
-            <div style="margin-top:6px" id="trkStatus"></div>
+          <div style="text-align: right">
+            <span class="rating-badge" id="trkRating"></span>
+            <div style="margin-top: 8px" id="trkStatus"></div>
           </div>
         </div>
 
-        <p class="muted" id="trkComment" style="margin-top: 10px"></p>
+        <p class="muted" id="trkComment" style="margin-top: 14px"></p>
 
-        <h4 style="margin-top: 18px; color: var(--green-dark)">Timeline</h4>
+        <h4 class="section-heading" style="margin-top: 22px; font-size: 16px">
+          <span id="timelineIcon"></span>
+          Progress
+        </h4>
         <div class="timeline" id="trkTimeline"></div>
       </div>
 
@@ -44,6 +52,11 @@
 
     <script src="/static/script.js"></script>
     <script>
+      qs("#navbar").innerHTML = renderNavbar("track", "consumer");
+      qs("#idIcon").innerHTML = Icons.shield;
+      qs("#dateIcon").innerHTML = Icons.clock;
+      qs("#timelineIcon").innerHTML = Icons.clipboard;
+
       function getParam(name) {
         return new URLSearchParams(window.location.search).get(name);
       }
@@ -55,12 +68,13 @@
 
       if (!c) {
         qs(".container").innerHTML =
-          `<div class="card"><p class="muted">No complaint found.</p></div>`;
+          '<div class="card"><p class="muted">No complaint found.</p></div>';
       } else {
         qs("#trkRestaurant").textContent = c.restaurant;
         qs("#trkId").textContent = c.id;
         qs("#trkDate").textContent = c.date;
-        qs("#trkRating").textContent = `${c.rating.toFixed(1)} / 5`;
+        qs("#trkRating").innerHTML =
+          `${icon("star", "sm")} ${c.rating.toFixed(1)} / 5`;
         qs("#trkStatus").innerHTML = statusChip(c.status);
         qs("#trkComment").textContent = c.comment || "";
 
@@ -72,13 +86,21 @@
         }[c.status];
 
         qs("#trkTimeline").innerHTML = stages
-          .map(
-            (s, idx) => `
-            <div class="timeline-step ${idx < reached ? "done" : ""}">
-              <div class="dot">${idx < reached ? "✓" : idx + 1}</div>
-              <div class="label">${s}</div>
-            </div>`
-          )
+          .map((s, idx) => {
+            let state = "";
+            if (idx < reached - 1) state = "done";
+            else if (idx === reached - 1)
+              state = c.status === "Action Taken" ? "done" : "current";
+            return `
+              <div class="timeline-step ${state}">
+                <div class="dot">${
+                  state === "done"
+                    ? '<span style="font-weight:700">✓</span>'
+                    : idx + 1
+                }</div>
+                <div class="label">${s}</div>
+              </div>`;
+          })
           .join("");
       }
     </script>

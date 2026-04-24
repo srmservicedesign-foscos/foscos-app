@@ -3,34 +3,48 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Rate Restaurant | FoSCoS Grievance Portal</title>
+    <title>Submit Rating | Consumer Grievance Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="/static/styles.css" />
   </head>
   <body>
-    <header class="app-header">
-      <div class="brand">
-        <span class="logo">F</span>
-        <span>FoSCoS Grievance Portal</span>
-      </div>
-      <nav>
-        <a href="index.html">Home</a>
-      </nav>
-    </header>
+    <div id="navbar"></div>
 
     <main class="container">
+      <h1 class="page-title">Submit Your Feedback</h1>
+      <p class="subtitle">
+        Rate the establishment on three core food safety parameters. Your
+        identity remains confidential and will not be shared with the business.
+      </p>
+
       <!-- Step 1: Rating form -->
       <section id="rateStep">
         <div class="card">
-          <h3 id="rName">Restaurant Name</h3>
-          <div class="meta" id="rLicense">License: --</div>
+          <div class="card-row">
+            <div>
+              <h3 id="rName">Restaurant Name</h3>
+              <div class="meta" id="rLicense">FSSAI License: --</div>
+              <div class="meta" id="rLocation" style="margin-top: 4px"></div>
+            </div>
+            <span class="tag" id="rRatingTag" style="background: var(--sage-soft); border-color: var(--sage)"></span>
+          </div>
         </div>
 
         <div class="card">
-          <h3>Rate the restaurant</h3>
-          <p class="muted">Move each slider to reflect your experience.</p>
+          <h3>Rate the Establishment</h3>
+          <p class="muted" style="margin-top: 4px">
+            Drag each slider to reflect your experience on a 5-point scale.
+          </p>
 
           <div class="slider-row">
-            <label for="s1">Premise Cleanliness</label>
+            <label for="s1">
+              <span id="ic1"></span>
+              Premise Cleanliness
+            </label>
             <input type="range" id="s1" min="1" max="5" value="3" />
             <div class="slider-options">
               <span>Very Poor</span><span>Poor</span><span>Okay</span
@@ -40,7 +54,10 @@
           </div>
 
           <div class="slider-row">
-            <label for="s2">Food Freshness</label>
+            <label for="s2">
+              <span id="ic2"></span>
+              Food Freshness
+            </label>
             <input type="range" id="s2" min="1" max="5" value="3" />
             <div class="slider-options">
               <span>Very Poor</span><span>Poor</span><span>Okay</span
@@ -50,7 +67,10 @@
           </div>
 
           <div class="slider-row">
-            <label for="s3">Staff Hygiene</label>
+            <label for="s3">
+              <span id="ic3"></span>
+              Staff Hygiene
+            </label>
             <input type="range" id="s3" min="1" max="5" value="3" />
             <div class="slider-options">
               <span>Very Poor</span><span>Poor</span><span>Okay</span
@@ -60,44 +80,45 @@
           </div>
 
           <div class="avg-box">
-            <div class="muted">Average Rating</div>
+            <div class="label-small">Average Rating</div>
             <div class="avg-num" id="avgNum">3.0</div>
             <div class="stars" id="avgStars">★★★☆☆</div>
           </div>
         </div>
 
         <!-- Conditional: bad rating -> mandatory evidence -->
-        <div class="card" id="badBlock">
-          <h3>Evidence required</h3>
-          <p class="muted">
-            Since one or more ratings are below "Okay", please share evidence so
-            we can investigate.
-          </p>
+        <div class="card hidden" id="badBlock">
+          <h3>Evidence Required</h3>
+          <div class="notice">
+            <span id="evidenceAlert"></span>
+            Since one or more ratings fall below "Okay", please share evidence
+            so that the Food Safety Officer can investigate.
+          </div>
 
           <label class="label" for="evidenceImg">
-            Upload evidence photo <span style="color: var(--danger)">*</span>
+            Upload evidence photo <span class="field-req">*</span>
           </label>
           <input id="evidenceImg" type="file" accept="image/*" class="input" />
 
           <label class="label" for="billImg">
-            Upload bill photo <span style="color: var(--danger)">*</span>
+            Upload bill photo <span class="field-req">*</span>
           </label>
           <input id="billImg" type="file" accept="image/*" class="input" />
 
           <label class="label" for="badName">
-            Your name <span style="color: var(--danger)">*</span>
+            Your name <span class="field-req">*</span>
           </label>
           <input id="badName" class="input" type="text" />
 
           <label class="label" for="badPhone">
-            Phone number <span style="color: var(--danger)">*</span>
+            Phone number <span class="field-req">*</span>
           </label>
           <input id="badPhone" class="input" type="tel" />
         </div>
 
         <!-- Conditional: good rating -> optional details -->
         <div class="card" id="goodBlock">
-          <h3>Anything to add?</h3>
+          <h3>Additional Comments</h3>
           <label class="label" for="goodComment">Comment (optional)</label>
           <textarea id="goodComment" class="textarea"></textarea>
 
@@ -108,16 +129,19 @@
           <input id="goodPhone" class="input" type="tel" />
         </div>
 
-        <button id="continueBtn" class="btn block">Continue</button>
+        <button id="continueBtn" class="btn block">
+          Continue to Verification
+          <span id="arrowIcon"></span>
+        </button>
       </section>
 
       <!-- Step 2: OTP -->
       <section id="otpStep" class="hidden">
         <div class="card">
-          <h3>Verify your phone</h3>
+          <h3>Verify Your Phone</h3>
           <p class="muted">
-            Enter the 6-digit code sent to
-            <span id="otpPhone"></span>.
+            A 6-digit verification code has been sent to
+            <strong id="otpPhone"></strong>.
           </p>
           <div class="otp-boxes" id="otpBoxes">
             <input type="text" inputmode="numeric" maxlength="1" />
@@ -128,8 +152,8 @@
             <input type="text" inputmode="numeric" maxlength="1" />
           </div>
           <button id="verifyOtpBtn" class="btn block">Verify OTP</button>
-          <p class="muted" style="text-align: center; margin-top: 8px">
-            Didn't receive code? <a href="#">Resend</a>
+          <p class="muted" style="text-align: center; margin-top: 10px">
+            Didn't receive the code? <a href="#">Resend</a>
           </p>
         </div>
       </section>
@@ -137,13 +161,13 @@
       <!-- Step 3: Confirmation -->
       <section id="doneStep" class="hidden">
         <div class="card success-screen">
-          <div class="icon">✓</div>
+          <div class="success-icon">✔️</div>
           <h3>Your feedback has been submitted</h3>
           <p class="muted">
-            Thank you for helping us keep food safe. Our FSO team may contact
-            you for verification.
+            Thank you for helping us keep food safe. The Food Safety Officer
+            may contact you for verification.
           </p>
-          <div style="margin-top: 14px; display: flex; gap: 10px; justify-content: center;">
+          <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: center;">
             <a href="track.html" class="btn">Track Complaint</a>
             <a href="index.html" class="btn secondary">Back to Home</a>
           </div>
@@ -153,13 +177,29 @@
 
     <script src="/static/script.js"></script>
     <script>
+      qs("#navbar").innerHTML = renderNavbar("", "consumer");
+      qs("#ic1").innerHTML = Icons.sparkle;
+      qs("#ic2").innerHTML = Icons.leaf;
+      qs("#ic3").innerHTML = Icons.chef;
+      qs("#arrowIcon").innerHTML = Icons.arrow_right;
+      qs("#evidenceAlert").innerHTML = icon("alert", "sm");
+
       const restaurant =
         Store.get("selectedRestaurant") || {
           name: "Unknown Restaurant",
           license: "N/A",
+          location: "",
+          rating: 0,
         };
       qs("#rName").textContent = restaurant.name;
-      qs("#rLicense").textContent = `License: ${restaurant.license}`;
+      qs("#rLicense").innerHTML =
+        `${icon("shield", "sm")} FSSAI License: ${restaurant.license}`;
+      qs("#rLocation").innerHTML = restaurant.location
+        ? `${icon("map", "sm")} ${restaurant.location}`
+        : "";
+      qs("#rRatingTag").innerHTML = restaurant.rating
+        ? `${icon("star", "sm")} Current ${restaurant.rating.toFixed(1)} / 5`
+        : "";
 
       const sliders = [qs("#s1"), qs("#s2"), qs("#s3")];
       const labels = [qs("#s1label"), qs("#s2label"), qs("#s3label")];
@@ -246,11 +286,9 @@
           alert("Please enter all 6 digits.");
           return;
         }
-        // UI-only: accept any 6-digit code
         qs("#otpStep").classList.add("hidden");
         qs("#doneStep").classList.remove("hidden");
 
-        // Save into local "complaints" list so dashboard can show it.
         const submission = Store.get("ratingSubmission");
         const existing = Store.get("userComplaints", []);
         existing.unshift({
