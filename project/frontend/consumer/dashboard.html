@@ -58,16 +58,57 @@
 
       <!-- Dashboard content -->
       <section id="dashboardStep" class="hidden">
+        <div class="stat-grid">
+          <div class="stat-card">
+            <span class="stat-icon" id="sdIcon1"></span>
+            <div>
+              <div class="stat-label">Total Complaints</div>
+              <div class="stat-value" id="sdTotal">0</div>
+              <div class="stat-hint">lifetime filings</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <span class="stat-icon amber" id="sdIcon2"></span>
+            <div>
+              <div class="stat-label">Pending</div>
+              <div class="stat-value" id="sdPending">0</div>
+              <div class="stat-hint">awaiting action</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <span class="stat-icon" id="sdIcon3" style="background: #0c5460"></span>
+            <div>
+              <div class="stat-label">Under Review</div>
+              <div class="stat-value" id="sdReview">0</div>
+              <div class="stat-hint">FSO investigating</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <span class="stat-icon sage" id="sdIcon4"></span>
+            <div>
+              <div class="stat-label">Action Taken</div>
+              <div class="stat-value" id="sdAction">0</div>
+              <div class="stat-hint">resolved</div>
+            </div>
+          </div>
+        </div>
+
         <div class="notice">
           <span id="bellIcon"></span>
           The Food Safety Officer may contact you for verification of
           submitted complaints.
         </div>
 
-        <h2 class="section-heading">
-          <span id="listIcon"></span>
-          Complaint History
-        </h2>
+        <div class="flex-between" style="margin-top: 22px; margin-bottom: 12px">
+          <h2 class="section-heading" style="margin: 0">
+            <span id="listIcon"></span>
+            Complaint History
+          </h2>
+          <a href="index.html" class="btn small">
+            <span id="plusIcon"></span> File New Complaint
+          </a>
+        </div>
+
         <div id="complaintList"></div>
       </section>
     </main>
@@ -76,7 +117,12 @@
     <script>
       qs("#navbar").innerHTML = renderNavbar("dashboard", "consumer");
       qs("#bellIcon").innerHTML = Icons.bell;
-      qs("#listIcon").innerHTML = Icons.list;
+      qs("#listIcon").innerHTML = Icons.history;
+      qs("#plusIcon").innerHTML = Icons.plus;
+      qs("#sdIcon1").innerHTML = Icons.document;
+      qs("#sdIcon2").innerHTML = Icons.clock;
+      qs("#sdIcon3").innerHTML = Icons.search_doc;
+      qs("#sdIcon4").innerHTML = Icons.verified;
 
       qs("#sendOtpBtn").addEventListener("click", () => {
         const phone = qs("#loginPhone").value.trim();
@@ -102,10 +148,28 @@
         renderComplaints();
       });
 
+      function statusIcon(status) {
+        if (status === "Action Taken") return icon("check", "sm");
+        if (status === "Under Review") return icon("search_doc", "sm");
+        return icon("clock", "sm");
+      }
+
       function renderComplaints() {
         const user = Store.get("userComplaints", []);
         const all = [...user, ...MOCK_COMPLAINTS];
         const listEl = qs("#complaintList");
+
+        qs("#sdTotal").textContent = all.length;
+        qs("#sdPending").textContent = all.filter(
+          (c) => c.status === "Pending"
+        ).length;
+        qs("#sdReview").textContent = all.filter(
+          (c) => c.status === "Under Review"
+        ).length;
+        qs("#sdAction").textContent = all.filter(
+          (c) => c.status === "Action Taken"
+        ).length;
+
         if (!all.length) {
           listEl.innerHTML =
             '<div class="card"><p class="muted">No complaints filed yet.</p></div>';
@@ -116,28 +180,60 @@
             (c) => `
             <div class="card">
               <div class="card-row">
-                <div>
-                  <h3>${c.restaurant}</h3>
-                  <div class="meta">${icon("clock", "sm")} Filed: ${c.date}</div>
-                  <div class="meta" style="margin-top: 4px">${
-                    c.comment || ""
-                  }</div>
+                <div class="flex" style="align-items: flex-start; gap: 14px">
+                  <span class="icon-circle lg" id="ic_${c.id}"></span>
+                  <div>
+                    <h3>${c.restaurant}</h3>
+                    <div class="meta">${icon("clock", "sm")} Filed: ${c.date}</div>
+                    <div class="meta" style="margin-top: 4px">${icon(
+                      "document",
+                      "sm"
+                    )} ${c.id}</div>
+                    <div class="meta" style="margin-top: 6px">${
+                      c.comment || ""
+                    }</div>
+                  </div>
                 </div>
                 <div style="text-align:right">
                   <span class="rating-badge">
                     ${icon("star", "sm")} ${c.rating.toFixed(1)} / 5
                   </span>
-                  <div style="margin-top:8px">${statusChip(c.status)}</div>
+                  <div style="margin-top: 8px">
+                    <span class="chip ${
+                      {
+                        Pending: "pending",
+                        "Under Review": "review",
+                        "Action Taken": "action",
+                      }[c.status] || ""
+                    }">${statusIcon(c.status)} ${c.status}</span>
+                  </div>
                 </div>
               </div>
-              <div style="margin-top: 12px">
+              <div style="margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap">
                 <a href="track.html?id=${c.id}" class="btn secondary small">
-                  Track ${icon("arrow_right", "sm")}
+                  ${icon("history", "sm")} Track
                 </a>
+                <span class="pill navy" style="font-size: 11px">
+                  ${icon("shield", "sm")} Confidential
+                </span>
               </div>
             </div>`
           )
           .join("");
+
+        all.forEach((c) => {
+          const el = qs(`#ic_${c.id}`);
+          if (!el) return;
+          if (c.status === "Action Taken") {
+            el.classList.add("sage");
+            el.innerHTML = Icons.verified;
+          } else if (c.status === "Under Review") {
+            el.innerHTML = Icons.search_doc;
+          } else {
+            el.classList.add("amber");
+            el.innerHTML = Icons.clock;
+          }
+        });
       }
     </script>
   </body>

@@ -21,6 +21,41 @@
         Operators, and take regulatory action.
       </p>
 
+      <div class="stat-grid">
+        <div class="stat-card">
+          <span class="stat-icon" id="fsoIcon1"></span>
+          <div>
+            <div class="stat-label">Total Complaints</div>
+            <div class="stat-value" id="fsoTotal">0</div>
+            <div class="stat-hint">assigned to you</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon amber" id="fsoIcon2"></span>
+          <div>
+            <div class="stat-label">Pending</div>
+            <div class="stat-value" id="fsoPending">0</div>
+            <div class="stat-hint">awaiting triage</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon" id="fsoIcon3" style="background: #0c5460"></span>
+          <div>
+            <div class="stat-label">Under Review</div>
+            <div class="stat-value" id="fsoReview">0</div>
+            <div class="stat-hint">inspections ongoing</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon sage" id="fsoIcon4"></span>
+          <div>
+            <div class="stat-label">Resolved</div>
+            <div class="stat-value" id="fsoResolved">0</div>
+            <div class="stat-hint">closed</div>
+          </div>
+        </div>
+      </div>
+
       <div class="tabs">
         <button class="tab active" data-tab="complaints">
           <span id="tabIc1"></span> Complaints
@@ -79,6 +114,10 @@
       qs("#tabIc1").innerHTML = Icons.clipboard;
       qs("#tabIc2").innerHTML = Icons.building;
       qs("#buildingIcon").innerHTML = Icons.building;
+      qs("#fsoIcon1").innerHTML = Icons.document;
+      qs("#fsoIcon2").innerHTML = Icons.clock;
+      qs("#fsoIcon3").innerHTML = Icons.search_doc;
+      qs("#fsoIcon4").innerHTML = Icons.verified;
 
       const ALL_COMPLAINTS = [
         {
@@ -131,17 +170,29 @@
         { license: "10012345001122", name: "South Express", location: "Chennai" },
       ];
 
+      function complaintHeadIcon(status) {
+        if (status === "Action Taken")
+          return `<span class="icon-circle sage lg">${Icons.verified}</span>`;
+        if (status === "Under Review")
+          return `<span class="icon-circle lg" style="background: #d1ecf1; color: #0c5460">${Icons.search_doc}</span>`;
+        return `<span class="icon-circle amber lg">${Icons.alert}</span>`;
+      }
+
       function complaintCard(c) {
         return `
           <div class="card" data-id="${c.id}">
             <div class="card-row">
-              <div>
-                <h3>${c.restaurant}</h3>
-                <div class="meta">${icon("shield", "sm")} FSSAI: ${
-                  c.license
-                }</div>
-                <div class="meta" style="margin-top: 4px">
-                  ${icon("clipboard", "sm")} Complaint ID: ${c.id}
+              <div class="flex" style="align-items: flex-start; gap: 14px">
+                ${complaintHeadIcon(c.status)}
+                <div>
+                  <h3>${c.restaurant}</h3>
+                  <div class="meta">${icon(
+                    "shield",
+                    "sm"
+                  )} FSSAI: ${c.license}</div>
+                  <div class="meta" style="margin-top: 4px">
+                    ${icon("document", "sm")} Complaint ID: ${c.id}
+                  </div>
                 </div>
               </div>
               <div style="text-align: right">
@@ -152,24 +203,48 @@
               </div>
             </div>
             <p style="margin: 12px 0">${c.complaint}</p>
-            <div class="muted" style="font-size: 13px; border-top: 1px dashed var(--border); padding-top: 10px">
-              ${icon("user", "sm")} <strong>${c.consumer_name}</strong>
-              &middot; ${icon("phone", "sm")} ${c.consumer_phone}
+            <hr class="divider-dashed" />
+            <div class="flex flex-wrap" style="font-size: 13px; gap: 14px">
+              <span class="flex" style="gap: 6px; color: var(--muted)">
+                ${icon("user", "sm")} <strong style="color: var(--navy)">${
+                  c.consumer_name
+                }</strong>
+              </span>
+              <span class="flex" style="gap: 6px; color: var(--muted)">
+                ${icon("phone", "sm")} ${c.consumer_phone}
+              </span>
+              <span class="pill" style="font-size: 11.5px">
+                ${icon("lock", "sm")} Confidential
+              </span>
             </div>
-            <div class="flex flex-wrap" style="margin-top: 12px; gap: 8px">
+            <div class="flex flex-wrap" style="margin-top: 14px; gap: 8px">
               <button class="btn small" data-action="warning">
-                ${icon("alert", "sm")} Issue Warning
+                ${icon("megaphone", "sm")} Issue Warning
               </button>
               <button class="btn small navy" data-action="inspection">
                 ${icon("search_doc", "sm")} Assign Inspection
               </button>
               <button class="btn small secondary" data-action="resolve">
-                ${icon("check", "sm")} Mark Resolved
+                ${icon("verified", "sm")} Mark Resolved
               </button>
             </div>
             <div class="action-slot"></div>
           </div>`;
       }
+
+      function refreshFsoStats() {
+        qs("#fsoTotal").textContent = ALL_COMPLAINTS.length;
+        qs("#fsoPending").textContent = ALL_COMPLAINTS.filter(
+          (c) => c.status === "Pending"
+        ).length;
+        qs("#fsoReview").textContent = ALL_COMPLAINTS.filter(
+          (c) => c.status === "Under Review"
+        ).length;
+        qs("#fsoResolved").textContent = ALL_COMPLAINTS.filter(
+          (c) => c.status === "Action Taken"
+        ).length;
+      }
+      refreshFsoStats();
 
       const listEl = qs("#complaintsList");
 
@@ -220,13 +295,23 @@
           `<div class="${cls}" style="margin-top: 10px">
              ${icon(
                action === "resolve"
-                 ? "check"
+                 ? "verified"
                  : action === "inspection"
                  ? "search_doc"
-                 : "alert",
+                 : "megaphone",
                "sm"
              )} ${msg}
            </div>`;
+
+        if (action === "resolve") {
+          const item = ALL_COMPLAINTS.find((c) => c.id === id);
+          if (item) item.status = "Action Taken";
+          refreshFsoStats();
+        } else if (action === "inspection") {
+          const item = ALL_COMPLAINTS.find((c) => c.id === id);
+          if (item) item.status = "Under Review";
+          refreshFsoStats();
+        }
       });
 
       // FBO table
@@ -235,20 +320,39 @@
       }
 
       const tableEl = qs("#fboTable");
-      tableEl.innerHTML = FBOS.map(
-        (f) => `
+      tableEl.innerHTML = FBOS.map((f) => {
+        const n = complaintsForLicense(f.license).length;
+        const sev =
+          n === 0
+            ? `<span class="pill sage">${icon("check", "sm")} Clean</span>`
+            : n <= 2
+            ? `<span class="pill amber">${icon(
+                "alert",
+                "sm"
+              )} ${n}</span>`
+            : `<span class="chip flag">${icon("fire", "sm")} ${n}</span>`;
+        return `
           <tr>
-            <td>${f.license}</td>
-            <td>${f.name}</td>
-            <td>${f.location}</td>
-            <td>${complaintsForLicense(f.license).length}</td>
+            <td><span class="flex" style="gap: 6px">${icon(
+              "shield",
+              "sm"
+            )} ${f.license}</span></td>
+            <td><span class="flex" style="gap: 6px">${icon(
+              "building",
+              "sm"
+            )} ${f.name}</span></td>
+            <td><span class="flex" style="gap: 6px">${icon(
+              "pin",
+              "sm"
+            )} ${f.location}</span></td>
+            <td>${sev}</td>
             <td>
               <button class="btn small secondary" data-license="${f.license}">
-                View Complaints
+                ${icon("eye", "sm")} View
               </button>
             </td>
-          </tr>`
-      ).join("");
+          </tr>`;
+      }).join("");
 
       tableEl.addEventListener("click", (e) => {
         const btn = e.target.closest("[data-license]");

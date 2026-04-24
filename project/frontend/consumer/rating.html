@@ -41,10 +41,15 @@
           </p>
 
           <div class="slider-row">
-            <label for="s1">
-              <span id="ic1"></span>
-              Premise Cleanliness
-            </label>
+            <div class="param-head">
+              <label for="s1" style="margin: 0">
+                <span class="icon-circle sage" id="ic1"></span>
+                Premise Cleanliness
+              </label>
+              <span class="pill sage" style="font-size: 11px" id="p1Hint">
+                Kitchen · Floors · Washrooms
+              </span>
+            </div>
             <input type="range" id="s1" min="1" max="5" value="3" />
             <div class="slider-options">
               <span>Very Poor</span><span>Poor</span><span>Okay</span
@@ -54,10 +59,15 @@
           </div>
 
           <div class="slider-row">
-            <label for="s2">
-              <span id="ic2"></span>
-              Food Freshness
-            </label>
+            <div class="param-head">
+              <label for="s2" style="margin: 0">
+                <span class="icon-circle amber" id="ic2"></span>
+                Food Freshness
+              </label>
+              <span class="pill amber" style="font-size: 11px" id="p2Hint">
+                Ingredients · Taste · Temperature
+              </span>
+            </div>
             <input type="range" id="s2" min="1" max="5" value="3" />
             <div class="slider-options">
               <span>Very Poor</span><span>Poor</span><span>Okay</span
@@ -67,10 +77,15 @@
           </div>
 
           <div class="slider-row">
-            <label for="s3">
-              <span id="ic3"></span>
-              Staff Hygiene
-            </label>
+            <div class="param-head">
+              <label for="s3" style="margin: 0">
+                <span class="icon-circle" id="ic3"></span>
+                Staff Hygiene
+              </label>
+              <span class="pill navy" style="font-size: 11px" id="p3Hint">
+                Gloves · Uniform · Grooming
+              </span>
+            </div>
             <input type="range" id="s3" min="1" max="5" value="3" />
             <div class="slider-options">
               <span>Very Poor</span><span>Poor</span><span>Okay</span
@@ -80,9 +95,14 @@
           </div>
 
           <div class="avg-box">
+            <div class="icon-circle lg" style="background: rgba(255,253,228,0.15); color: var(--amber); margin: 0 auto 10px" id="avgBadgeIcon"></div>
             <div class="label-small">Average Rating</div>
             <div class="avg-num" id="avgNum">3.0</div>
             <div class="stars" id="avgStars">★★★☆☆</div>
+            <div class="flex" style="justify-content: center; margin-top: 10px; color: rgba(255,253,228,0.8); font-size: 12px" id="avgNote">
+              <span id="avgNoteIcon"></span>
+              <span id="avgNoteText">Share additional context below</span>
+            </div>
           </div>
         </div>
 
@@ -96,22 +116,26 @@
           </div>
 
           <label class="label" for="evidenceImg">
-            Upload evidence photo <span class="field-req">*</span>
+            <span id="evIcon1"></span> Upload evidence photo
+            <span class="field-req">*</span>
           </label>
           <input id="evidenceImg" type="file" accept="image/*" class="input" />
 
           <label class="label" for="billImg">
-            Upload bill photo <span class="field-req">*</span>
+            <span id="evIcon2"></span> Upload bill photo
+            <span class="field-req">*</span>
           </label>
           <input id="billImg" type="file" accept="image/*" class="input" />
 
           <label class="label" for="badName">
-            Your name <span class="field-req">*</span>
+            <span id="evIcon3"></span> Your name
+            <span class="field-req">*</span>
           </label>
           <input id="badName" class="input" type="text" />
 
           <label class="label" for="badPhone">
-            Phone number <span class="field-req">*</span>
+            <span id="evIcon4"></span> Phone number
+            <span class="field-req">*</span>
           </label>
           <input id="badPhone" class="input" type="tel" />
         </div>
@@ -119,13 +143,19 @@
         <!-- Conditional: good rating -> optional details -->
         <div class="card" id="goodBlock">
           <h3>Additional Comments</h3>
-          <label class="label" for="goodComment">Comment (optional)</label>
+          <label class="label" for="goodComment">
+            <span id="gIcon1"></span> Comment (optional)
+          </label>
           <textarea id="goodComment" class="textarea"></textarea>
 
-          <label class="label" for="goodName">Your name</label>
+          <label class="label" for="goodName">
+            <span id="gIcon2"></span> Your name
+          </label>
           <input id="goodName" class="input" type="text" />
 
-          <label class="label" for="goodPhone">Phone number</label>
+          <label class="label" for="goodPhone">
+            <span id="gIcon3"></span> Phone number
+          </label>
           <input id="goodPhone" class="input" type="tel" />
         </div>
 
@@ -161,15 +191,44 @@
       <!-- Step 3: Confirmation -->
       <section id="doneStep" class="hidden">
         <div class="card success-screen">
-          <div class="success-icon">✔️</div>
-          <h3>Your feedback has been submitted</h3>
+          <div class="success-icon" id="successIconWrap"></div>
+          <h3>Grievance Submitted Successfully</h3>
           <p class="muted">
             Thank you for helping us keep food safe. The Food Safety Officer
             may contact you for verification.
           </p>
-          <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: center;">
-            <a href="track.html" class="btn">Track Complaint</a>
-            <a href="index.html" class="btn secondary">Back to Home</a>
+
+          <div class="kv-grid" style="text-align: left; max-width: 560px; margin: 24px auto 0">
+            <div class="kv">
+              <span class="icon-circle" id="kvIcon1"></span>
+              <div>
+                <div class="kv-label">Complaint ID</div>
+                <div class="kv-value" id="kvCid">—</div>
+              </div>
+            </div>
+            <div class="kv">
+              <span class="icon-circle sage" id="kvIcon2"></span>
+              <div>
+                <div class="kv-label">Filed On</div>
+                <div class="kv-value" id="kvDate">—</div>
+              </div>
+            </div>
+            <div class="kv">
+              <span class="icon-circle amber" id="kvIcon3"></span>
+              <div>
+                <div class="kv-label">Expected Response</div>
+                <div class="kv-value">Within 7 days</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top: 24px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap">
+            <a href="track.html" class="btn" id="trackBtn">
+              <span id="trackBtnIcon"></span> Track Complaint
+            </a>
+            <a href="index.html" class="btn secondary">
+              <span id="homeBtnIcon"></span> Back to Home
+            </a>
           </div>
         </div>
       </section>
@@ -178,11 +237,20 @@
     <script src="/static/script.js"></script>
     <script>
       qs("#navbar").innerHTML = renderNavbar("", "consumer");
-      qs("#ic1").innerHTML = Icons.sparkle;
-      qs("#ic2").innerHTML = Icons.leaf;
-      qs("#ic3").innerHTML = Icons.chef;
+      qs("#ic1").innerHTML = Icons.building_clean;
+      qs("#ic2").innerHTML = Icons.utensils;
+      qs("#ic3").innerHTML = Icons.gloves;
       qs("#arrowIcon").innerHTML = Icons.arrow_right;
       qs("#evidenceAlert").innerHTML = icon("alert", "sm");
+      qs("#avgBadgeIcon").innerHTML = Icons.award;
+      qs("#avgNoteIcon").innerHTML = icon("info", "sm");
+      qs("#evIcon1").innerHTML = icon("camera", "sm");
+      qs("#evIcon2").innerHTML = icon("receipt", "sm");
+      qs("#evIcon3").innerHTML = icon("user", "sm");
+      qs("#evIcon4").innerHTML = icon("phone", "sm");
+      qs("#gIcon1").innerHTML = icon("message", "sm");
+      qs("#gIcon2").innerHTML = icon("user", "sm");
+      qs("#gIcon3").innerHTML = icon("phone", "sm");
 
       const restaurant =
         Store.get("selectedRestaurant") || {
@@ -291,17 +359,28 @@
 
         const submission = Store.get("ratingSubmission");
         const existing = Store.get("userComplaints", []);
+        const newId = "C" + Math.floor(900 + Math.random() * 99);
+        const today = new Date().toISOString().slice(0, 10);
         existing.unshift({
-          id: "C" + Math.floor(900 + Math.random() * 99),
+          id: newId,
           restaurant: submission.restaurant.name,
           rating: submission.average,
           status: "Pending",
-          date: new Date().toISOString().slice(0, 10),
+          date: today,
           comment: submission.hasBad
             ? "Evidence uploaded for investigation."
             : qs("#goodComment")?.value || "",
         });
         Store.set("userComplaints", existing);
+
+        qs("#successIconWrap").innerHTML = "✔️";
+        qs("#kvCid").textContent = newId;
+        qs("#kvDate").textContent = today;
+        qs("#kvIcon1").innerHTML = Icons.document;
+        qs("#kvIcon2").innerHTML = Icons.clock;
+        qs("#kvIcon3").innerHTML = Icons.stopwatch;
+        qs("#trackBtnIcon").innerHTML = Icons.history;
+        qs("#homeBtnIcon").innerHTML = Icons.home;
       });
     </script>
   </body>

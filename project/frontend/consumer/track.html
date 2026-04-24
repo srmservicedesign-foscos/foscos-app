@@ -23,13 +23,16 @@
 
       <div class="card">
         <div class="card-row">
-          <div>
-            <h3 id="trkRestaurant">--</h3>
-            <div class="meta">
-              <span id="idIcon"></span> Complaint ID: <span id="trkId">--</span>
-            </div>
-            <div class="meta" style="margin-top: 4px">
-              <span id="dateIcon"></span> Filed: <span id="trkDate">--</span>
+          <div class="flex" style="gap: 14px; align-items: flex-start">
+            <span class="icon-circle lg" id="trkIconWrap"></span>
+            <div>
+              <h3 id="trkRestaurant">--</h3>
+              <div class="meta">
+                <span id="idIcon"></span> Complaint ID: <span id="trkId">--</span>
+              </div>
+              <div class="meta" style="margin-top: 4px">
+                <span id="dateIcon"></span> Filed: <span id="trkDate">--</span>
+              </div>
             </div>
           </div>
           <div style="text-align: right">
@@ -38,11 +41,36 @@
           </div>
         </div>
 
-        <p class="muted" id="trkComment" style="margin-top: 14px"></p>
+        <div class="kv-grid">
+          <div class="kv">
+            <span class="icon-circle" id="kv1"></span>
+            <div>
+              <div class="kv-label">Category</div>
+              <div class="kv-value">Food Safety</div>
+            </div>
+          </div>
+          <div class="kv">
+            <span class="icon-circle sage" id="kv2"></span>
+            <div>
+              <div class="kv-label">Jurisdiction</div>
+              <div class="kv-value">District FSO</div>
+            </div>
+          </div>
+          <div class="kv">
+            <span class="icon-circle amber" id="kv3"></span>
+            <div>
+              <div class="kv-label">Expected Action</div>
+              <div class="kv-value">Within 7 days</div>
+            </div>
+          </div>
+        </div>
+
+        <hr class="divider-dashed" />
+        <p class="muted" id="trkComment" style="margin-top: 8px"></p>
 
         <h4 class="section-heading" style="margin-top: 22px; font-size: 16px">
           <span id="timelineIcon"></span>
-          Progress
+          Progress Tracker
         </h4>
         <div class="timeline" id="trkTimeline"></div>
       </div>
@@ -53,9 +81,12 @@
     <script src="/static/script.js"></script>
     <script>
       qs("#navbar").innerHTML = renderNavbar("track", "consumer");
-      qs("#idIcon").innerHTML = Icons.shield;
-      qs("#dateIcon").innerHTML = Icons.clock;
-      qs("#timelineIcon").innerHTML = Icons.clipboard;
+      qs("#idIcon").innerHTML = icon("document", "sm");
+      qs("#dateIcon").innerHTML = icon("clock", "sm");
+      qs("#timelineIcon").innerHTML = Icons.trending;
+      qs("#kv1").innerHTML = Icons.shield;
+      qs("#kv2").innerHTML = Icons.badge;
+      qs("#kv3").innerHTML = Icons.stopwatch;
 
       function getParam(name) {
         return new URLSearchParams(window.location.search).get(name);
@@ -78,7 +109,22 @@
         qs("#trkStatus").innerHTML = statusChip(c.status);
         qs("#trkComment").textContent = c.comment || "";
 
-        const stages = ["Submitted", "Under Review", "Action Taken"];
+        const iconWrap = qs("#trkIconWrap");
+        if (c.status === "Action Taken") {
+          iconWrap.classList.add("sage");
+          iconWrap.innerHTML = Icons.verified;
+        } else if (c.status === "Under Review") {
+          iconWrap.innerHTML = Icons.search_doc;
+        } else {
+          iconWrap.classList.add("amber");
+          iconWrap.innerHTML = Icons.clock;
+        }
+
+        const stages = [
+          { label: "Submitted", icon: Icons.upload, sub: "Filed by consumer" },
+          { label: "Under Review", icon: Icons.search_doc, sub: "FSO investigating" },
+          { label: "Action Taken", icon: Icons.verified, sub: "Resolved" },
+        ];
         const reached = {
           Pending: 1,
           "Under Review": 2,
@@ -91,14 +137,17 @@
             if (idx < reached - 1) state = "done";
             else if (idx === reached - 1)
               state = c.status === "Action Taken" ? "done" : "current";
+            const dotContent =
+              state === "done"
+                ? '<span style="font-weight:700">✓</span>'
+                : state === "current"
+                ? s.icon
+                : idx + 1;
             return `
               <div class="timeline-step ${state}">
-                <div class="dot">${
-                  state === "done"
-                    ? '<span style="font-weight:700">✓</span>'
-                    : idx + 1
-                }</div>
-                <div class="label">${s}</div>
+                <div class="dot">${dotContent}</div>
+                <div class="label">${s.label}</div>
+                <div class="sub-label">${s.sub}</div>
               </div>`;
           })
           .join("");

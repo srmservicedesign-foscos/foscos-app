@@ -21,17 +21,68 @@
         action. Consumer identity is protected and not shared.
       </p>
 
+      <div class="stat-grid">
+        <div class="stat-card">
+          <span class="stat-icon" id="fbIcon1"></span>
+          <div>
+            <div class="stat-label">Total Feedback</div>
+            <div class="stat-value" id="fbTotal">0</div>
+            <div class="stat-hint">all time</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon sage" id="fbIcon2"></span>
+          <div>
+            <div class="stat-label">Positive</div>
+            <div class="stat-value" id="fbGood">0</div>
+            <div class="stat-hint"><span id="fbHint2"></span> 4★ and above</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon amber" id="fbIcon3"></span>
+          <div>
+            <div class="stat-label">Under Review</div>
+            <div class="stat-value" id="fbReview">0</div>
+            <div class="stat-hint">needs attention</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon danger" id="fbIcon4"></span>
+          <div>
+            <div class="stat-label">Flagged</div>
+            <div class="stat-value" id="fbFlag">0</div>
+            <div class="stat-hint">disputed</div>
+          </div>
+        </div>
+      </div>
+
       <div class="notice navy">
         <span id="shieldIcon"></span>
         Consumer names and phone numbers are withheld to ensure confidential
         reporting.
       </div>
 
-      <div class="filter-row">
-        <button class="filter active" data-filter="all">All Feedback</button>
-        <button class="filter" data-filter="good">Good</button>
-        <button class="filter" data-filter="review">Under Review</button>
-        <button class="filter" data-filter="flag">Flagged</button>
+      <div class="flex-between" style="margin-top: 18px">
+        <h2 class="section-heading" style="margin: 0">
+          <span id="feedbackSectionIcon"></span>
+          Customer Feedback
+        </h2>
+        <span class="pill amber" id="filterHint"></span>
+      </div>
+
+      <div class="filter-row" style="margin-top: 12px">
+        <button class="filter active" data-filter="all">
+          <span id="fil_all"></span> All Feedback
+        </button>
+        <button class="filter" data-filter="good">
+          <span id="fil_good"></span> Good
+        </button>
+        <button class="filter" data-filter="review">
+          <span id="fil_rev"></span> Under Review
+        </button>
+        <button class="filter" data-filter="flag">
+          <span id="fil_flag"></span> Flagged
+        </button>
       </div>
 
       <div id="feedbackList"></div>
@@ -42,14 +93,20 @@
         class="card"
         style="background: var(--sage-soft); border-color: var(--sage); margin-top: 10px"
       >
-        <h4>Mark as Resolved</h4>
-        <label class="label">Improvement note</label>
+        <h4 class="flex" style="gap: 8px; margin-bottom: 6px">
+          <span class="resolve-head-icon"></span> Mark as Resolved
+        </h4>
+        <label class="label">
+          <span class="resolve-note-icon"></span> Improvement note
+        </label>
         <textarea
           class="textarea note-input"
           placeholder="What corrective action did you take?"
         ></textarea>
         <div style="margin-top: 10px; display: flex; gap: 8px">
-          <button class="btn small sage submit-resolve">Submit</button>
+          <button class="btn small sage submit-resolve">
+            <span class="resolve-submit-icon"></span> Submit
+          </button>
           <button class="btn small secondary cancel-resolve">Cancel</button>
         </div>
       </div>
@@ -58,7 +115,19 @@
     <script src="/static/script.js"></script>
     <script>
       qs("#navbar").innerHTML = renderNavbar("feedback", "fbo");
-      qs("#shieldIcon").innerHTML = Icons.shield;
+      qs("#shieldIcon").innerHTML = Icons.lock;
+      qs("#feedbackSectionIcon").innerHTML = Icons.message;
+      qs("#filterHint").innerHTML =
+        `${icon("filter", "sm")} Filter by status`;
+      qs("#fbIcon1").innerHTML = Icons.message;
+      qs("#fbIcon2").innerHTML = Icons.thumbs_up;
+      qs("#fbIcon3").innerHTML = Icons.clock;
+      qs("#fbIcon4").innerHTML = Icons.flag;
+      qs("#fbHint2").innerHTML = icon("trending", "sm");
+      qs("#fil_all").innerHTML = icon("grid", "sm");
+      qs("#fil_good").innerHTML = icon("thumbs_up", "sm");
+      qs("#fil_rev").innerHTML = icon("clock", "sm");
+      qs("#fil_flag").innerHTML = icon("flag", "sm");
 
       const FBO_FEEDBACK = [
         {
@@ -125,7 +194,9 @@
                   )}<br/>${img}</span>`
               )
               .join("")
-          : '<span class="muted" style="font-size: 12px">No images attached</span>';
+          : `<span class="pill" style="font-size: 11.5px">
+               ${icon("camera", "sm")} No images attached
+             </span>`;
 
         const actionsHtml =
           f.type === "good"
@@ -139,27 +210,49 @@
                  ${icon("flag", "sm")} Flag as Incorrect
                </button>`;
 
+        const headIcon =
+          f.type === "good"
+            ? `<span class="icon-circle sage">${Icons.thumbs_up}</span>`
+            : `<span class="icon-circle amber">${Icons.alert}</span>`;
+
         return `
           <div class="card" data-id="${f.id}" data-state="${f.state}">
             <div class="card-row">
-              <div>
-                <div class="flex" style="gap: 10px; margin-bottom: 6px">
-                  <span class="stars">${renderStars(f.rating)}</span>
-                  <span class="rating-badge">
-                    ${icon("star", "sm")} ${f.rating.toFixed(1)} / 5
-                  </span>
-                </div>
-                <div class="muted" style="font-size: 12px">
-                  Feedback ID: ${f.id}
+              <div class="flex" style="align-items: flex-start; gap: 12px">
+                ${headIcon}
+                <div>
+                  <div class="flex" style="gap: 10px; margin-bottom: 6px">
+                    <span class="stars">${renderStars(f.rating)}</span>
+                    <span class="rating-badge">
+                      ${icon("star", "sm")} ${f.rating.toFixed(1)} / 5
+                    </span>
+                  </div>
+                  <div class="muted" style="font-size: 12px; display: flex; align-items: center; gap: 4px">
+                    ${icon("document", "sm")} Feedback ID: ${f.id}
+                  </div>
                 </div>
               </div>
               <div class="state-chip">${stateChip(f.state)}</div>
             </div>
             <p style="margin: 12px 0">${f.comment}</p>
             <div style="margin-bottom: 12px">${imagesHtml}</div>
+            <hr class="divider-dashed" />
             <div class="flex flex-wrap" style="gap: 8px">${actionsHtml}</div>
             <div class="resolve-slot"></div>
           </div>`;
+      }
+
+      function refreshStats() {
+        qs("#fbTotal").textContent = FBO_FEEDBACK.length;
+        qs("#fbGood").textContent = FBO_FEEDBACK.filter(
+          (f) => f.state === "good"
+        ).length;
+        qs("#fbReview").textContent = FBO_FEEDBACK.filter(
+          (f) => f.state === "review"
+        ).length;
+        qs("#fbFlag").textContent = FBO_FEEDBACK.filter(
+          (f) => f.state === "flag"
+        ).length;
       }
 
       const listEl = qs("#feedbackList");
@@ -178,6 +271,7 @@
       }
 
       renderList();
+      refreshStats();
 
       qsa(".filter-row .filter").forEach((btn) => {
         btn.addEventListener("click", () => {
@@ -204,12 +298,22 @@
             card.querySelector(".state-chip").innerHTML = stateChip("flag");
             card.style.opacity = "0.75";
             e.target.closest(".flag-btn").disabled = true;
+            const item = FBO_FEEDBACK.find((f) => f.id === card.dataset.id);
+            if (item) item.state = "flag";
+            refreshStats();
           }
         }
 
         if (e.target.closest(".resolve-btn")) {
           const tpl = qs("#resolveTemplate").content.cloneNode(true);
           card.querySelector(".resolve-slot").replaceChildren(tpl);
+          const slot = card.querySelector(".resolve-slot");
+          slot.querySelector(".resolve-head-icon").innerHTML =
+            icon("check", "sm");
+          slot.querySelector(".resolve-note-icon").innerHTML =
+            icon("document", "sm");
+          slot.querySelector(".resolve-submit-icon").innerHTML =
+            icon("check", "sm");
         }
 
         if (e.target.closest(".cancel-resolve")) {
@@ -224,13 +328,16 @@
           }
           card.querySelector(".resolve-slot").innerHTML =
             `<div class="notice sage" style="margin-top: 10px">
-               ${icon("check", "sm")} Resolved. Note: "${note}"
+               ${icon("verified", "sm")} Resolved. Note: "${note}"
              </div>`;
           card.dataset.state = "good";
           card.querySelector(".state-chip").innerHTML = stateChip("good");
           card
             .querySelectorAll(".resolve-btn, .flag-btn")
             .forEach((b) => (b.disabled = true));
+          const item = FBO_FEEDBACK.find((f) => f.id === card.dataset.id);
+          if (item) item.state = "good";
+          refreshStats();
         }
       });
     </script>

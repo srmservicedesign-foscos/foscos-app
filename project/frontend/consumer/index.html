@@ -20,6 +20,7 @@
 
     <section class="hero">
       <div class="hero-inner">
+        <span class="title-chip" id="heroBadge"></span>
         <h1>Report a Food Safety Issue</h1>
         <p>
           Your feedback safeguards public health. Search for a registered
@@ -33,16 +34,51 @@
             placeholder="Search by restaurant name or FSSAI license number"
             aria-label="Search restaurants"
           />
-          <button class="btn" id="heroSearchBtn">Search</button>
+          <button class="btn" id="heroSearchBtn">
+            <span id="heroBtnIcon"></span> Search
+          </button>
+        </div>
+        <div class="flex" style="gap: 10px; margin-top: 18px; flex-wrap: wrap">
+          <span class="pill navy" id="pillQr"></span>
+          <span class="pill sage" id="pillVerified"></span>
+          <span class="pill amber" id="pillConfidential"></span>
         </div>
       </div>
     </section>
 
     <main class="container">
+      <div class="stat-grid">
+        <div class="stat-card">
+          <span class="stat-icon" id="statIcon1"></span>
+          <div>
+            <div class="stat-label">Registered FBOs</div>
+            <div class="stat-value" id="statValue1">6</div>
+            <div class="stat-hint"><span id="statHint1"></span> verified</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon sage" id="statIcon2"></span>
+          <div>
+            <div class="stat-label">Avg. Hygiene Score</div>
+            <div class="stat-value" id="statValue2">4.1</div>
+            <div class="stat-hint">last 30 days</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon amber" id="statIcon3"></span>
+          <div>
+            <div class="stat-label">Complaints Resolved</div>
+            <div class="stat-value">94%</div>
+            <div class="stat-hint">within 7 days</div>
+          </div>
+        </div>
+      </div>
+
       <section id="nearbySection">
         <h2 class="section-heading">
           <span class="icon" id="nearbyIcon"></span>
           Nearby Registered Restaurants
+          <span class="pill sage" style="margin-left: auto" id="nearbyCount"></span>
         </h2>
         <div class="restaurant-grid" id="restaurantList"></div>
       </section>
@@ -108,9 +144,13 @@
           </h4>
           <ul id="pvComments" style="padding-left: 18px; margin-top: 6px"></ul>
 
-          <div style="margin-top: 18px; display: flex; gap: 10px">
-            <button id="pvRateBtn" class="btn">Rate this Restaurant</button>
-            <button id="pvBackBtn" class="btn secondary">Back</button>
+          <div style="margin-top: 18px; display: flex; gap: 10px; flex-wrap: wrap">
+            <button id="pvRateBtn" class="btn">
+              <span id="pvRateIcon"></span> Rate this Restaurant
+            </button>
+            <button id="pvBackBtn" class="btn secondary">
+              <span id="pvBackIcon"></span> Back
+            </button>
           </div>
         </div>
       </section>
@@ -122,9 +162,21 @@
     <script>
       qs("#navbar").innerHTML = renderNavbar("home", "consumer");
       qs("#heroSearchIcon").innerHTML = Icons.search;
-      qs("#nearbyIcon").innerHTML = Icons.map;
-      qs("#reportIcon").innerHTML = Icons.flag;
+      qs("#heroBtnIcon").innerHTML = Icons.search;
+      qs("#nearbyIcon").innerHTML = Icons.pin;
+      qs("#reportIcon").innerHTML = Icons.megaphone;
       qs("#commentsIcon").innerHTML = Icons.message;
+      qs("#heroBadge").innerHTML =
+        `${icon("shield", "sm")} Food Safety & Standards Authority`;
+      qs("#pillQr").innerHTML = `${icon("qr", "sm")} Scan QR at restaurant`;
+      qs("#pillVerified").innerHTML =
+        `${icon("verified", "sm")} FSSAI verified listings`;
+      qs("#pillConfidential").innerHTML =
+        `${icon("lock", "sm")} Confidential reporting`;
+      qs("#statIcon1").innerHTML = Icons.building;
+      qs("#statIcon2").innerHTML = Icons.sparkle;
+      qs("#statIcon3").innerHTML = Icons.verified;
+      qs("#statHint1").innerHTML = icon("check", "sm");
 
       const listEl = qs("#restaurantList");
       const searchEl = qs("#searchInput");
@@ -140,6 +192,8 @@
           return;
         }
         notFoundEl.classList.add("hidden");
+        qs("#nearbyCount").innerHTML =
+          `${icon("grid", "sm")} ${list.length} listings`;
         listEl.innerHTML = list
           .map(
             (r) => `
@@ -149,18 +203,32 @@
                 <span class="badge-top">
                   ${icon("star", "sm")} ${r.rating.toFixed(1)}
                 </span>
+                <span class="pill sage" style="position:absolute; left: 10px; top: 10px; font-size: 10.5px">
+                  ${icon("verified", "sm")} FSSAI
+                </span>
               </div>
               <div class="body">
                 <h3>${r.name}</h3>
                 <div class="meta">
-                  ${icon("map", "sm")} ${r.location}
+                  ${icon("pin", "sm")} ${r.location}
                 </div>
                 <div class="meta" style="margin-top: 4px">
-                  ${icon("leaf", "sm")} ${r.cuisine}
+                  ${icon("utensils", "sm")} ${r.cuisine}
                 </div>
                 <div class="flex-between" style="margin-top: 12px">
-                  <span class="tag">FSSAI ${r.license}</span>
+                  <span class="tag">${icon(
+                    "shield",
+                    "sm"
+                  )} ${r.license}</span>
                   <span class="stars">${renderStars(r.rating)}</span>
+                </div>
+                <div class="flex" style="gap: 8px; margin-top: 10px">
+                  <span class="pill" style="font-size: 10.5px">
+                    ${icon("eye", "sm")} View
+                  </span>
+                  <span class="pill amber" style="font-size: 10.5px">
+                    ${icon("star", "sm")} Rate
+                  </span>
                 </div>
               </div>
             </article>`
@@ -201,6 +269,10 @@
                </li>`
           )
           .join("");
+        qs("#pvRateIcon").innerHTML = Icons.star;
+        qs("#pvBackIcon").innerHTML = Icons.arrow_right;
+        qs("#pvBackBtn").querySelector("#pvBackIcon").style.transform =
+          "rotate(180deg)";
         qs("#pvRateBtn").onclick = () => {
           Store.set("selectedRestaurant", r);
           window.location.href = "rating.html";
