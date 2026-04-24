@@ -80,11 +80,17 @@
         </div>
 
         <section id="nearbySection">
-          <h2 class="section-heading">
-            <span class="icon" id="nearbyIcon"></span>
-            Nearby Registered Restaurants
-            <span class="pill sage" style="margin-left: auto" id="nearbyCount"></span>
-          </h2>
+          <div class="flex-between">
+            <h2 class="section-heading" style="margin-right: auto">
+              <span class="icon" id="nearbyIcon"></span>
+              Nearby Registered Restaurants
+            </h2>
+            <span class="pill sage" id="nearbyCount"></span>
+          </div>
+          <div id="firestoreNotice" class="notice hidden" style="margin: 6px 0 14px">
+            ⚠ Showing mock data. To load live listings, fill your Firebase
+            web config in <code>frontend/shared/firebase.js</code>.
+          </div>
           <div class="restaurant-grid" id="restaurantList">
             <div class="card muted">Loading restaurants…</div>
           </div>
@@ -444,25 +450,74 @@
         window.location.href = `rating.html?${params.toString()}`;
       });
 
-      // Load restaurants: Firestore first (if ready), else mock data
+      // Load restaurants: Firestore first (if ready), else mock data.
+      // Handles load order where firebase.js module may run before OR after
+      // this inline script.
+      function showFirestoreNotice(msg) {
+        const el = qs("#firestoreNotice");
+        if (!el) return;
+        if (msg) el.innerHTML = "⚠ " + msg;
+        el.classList.remove("hidden");
+      }
+
+      async function loadFromFirestore() {
+        const portal = window.Portal;
+        if (!portal) return;
+        if (!portal.isConfigured) {
+          showFirestoreNotice(
+            "Firebase is not configured. Edit frontend/shared/firebase.js → firebaseConfig with your project's keys."
+          );
+          return;
+        }
+        if (!portal.isFirebaseReady) {
+          showFirestoreNotice(
+            "Firebase configured but failed to initialise. Check browser console."
+          );
+          return;
+        }
+        try {
+          const list = await portal.fetchRestaurants();
+          if (!list) {
+            showFirestoreNotice(
+              "Firestore fetch failed. Check Firestore security rules permit public reads on the 'restaurants' collection."
+            );
+            return;
+          }
+          if (!list.length) {
+            showFirestoreNotice(
+              "Firestore connected, but the 'restaurants' collection is empty."
+            );
+            // Keep the mock list visible so the page isn't blank
+            return;
+          }
+          restaurants = list;
+          renderRestaurants(restaurants);
+          updateStats();
+        } catch (e) {
+          console.error("Restaurants load failed:", e);
+          showFirestoreNotice("Unexpected error — see browser console.");
+        }
+      }
+
       function boot() {
         renderRestaurants(restaurants);
         updateStats();
 
-        const tryFirestore = () => {
-          if (window.Portal && window.Portal.isFirebaseReady) {
-            window.Portal.fetchRestaurants().then((list) => {
-              if (list && list.length) {
-                restaurants = list;
-                renderRestaurants(restaurants);
-                updateStats();
-              }
-            });
-          }
-        };
-
-        if (window.Portal) tryFirestore();
-        else window.addEventListener("portal:ready", tryFirestore);
+        if (window.Portal) {
+          loadFromFirestore();
+        } else {
+          window.addEventListener("portal:ready", loadFromFirestore, {
+            once: true,
+          });
+          // Fallback: if the module never loads (network/CDN), surface a notice
+          setTimeout(() => {
+            if (!window.Portal) {
+              showFirestoreNotice(
+                "Firebase module didn't load (check network / script path)."
+              );
+            }
+          }, 4000);
+        }
       }
       boot();
     </script>

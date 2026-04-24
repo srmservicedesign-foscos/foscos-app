@@ -1,16 +1,31 @@
 /* Consumer Grievance Portal — Firebase / Firestore integration.
  *
- * Drop your Firebase project config into `firebaseConfig` below.
- * Until a `projectId` is set, the helpers return null and the UI
- * falls back to the mock data defined in shared/script.js.
+ * =====================  SETUP  =====================
+ * 1. Paste your Firebase web-app config into `firebaseConfig` below.
+ *    (Firebase console → Project settings → Your apps → Web app → Config)
  *
- * Expected Firestore shape:
- *   collection "restaurants" — { name, license, location, rating }
- *   collection "comments"    — { restaurantId, text, type: "good"|"bad",
- *                                status: "approved"|"pending", createdAt }
+ * 2. Allow public reads on the `restaurants` collection in Firestore rules:
  *
- * Loaded as an ES module; a tiny bridge exposes helpers on window.Portal
- * so the existing non-module page scripts can consume them.
+ *      rules_version = '2';
+ *      service cloud.firestore {
+ *        match /databases/{database}/documents {
+ *          match /restaurants/{id} { allow read: if true; }
+ *          match /comments/{id}    { allow read: if true; }
+ *        }
+ *      }
+ *
+ * 3. Each document in the `restaurants` collection should have fields:
+ *      name (string), license (string), location (string), rating (number)
+ *
+ * Optional `comments` collection:
+ *      restaurantId, text, type ("good"|"bad"),
+ *      status ("approved"|"pending"), createdAt
+ *
+ * This module runs as an ES module (loaded via <script type="module">) and
+ * bridges Firestore helpers onto window.Portal so non-module page scripts
+ * can consume them. It always dispatches a `portal:ready` event on window
+ * once bootstrapping finishes — success or not — so the UI can react.
+ * ====================================================
  */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -23,51 +38,83 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
-  // TODO: fill in with your Firebase project's web config
+  // ▼▼▼ REPLACE THESE WITH YOUR FIREBASE WEB CONFIG ▼▼▼
   apiKey: "",
   authDomain: "",
   projectId: "",
   storageBucket: "",
   messagingSenderId: "",
   appId: "",
+  // ▲▲▲ REPLACE THESE WITH YOUR FIREBASE WEB CONFIG ▲▲▲
 };
 
-const isConfigured = Boolean(firebaseConfig.projectId);
+const isConfigured = Boolean(firebaseConfig.projectId && firebaseConfig.apiKey);
 let db = null;
+let initError = null;
 
-if (isConfigured) {
+if (!isConfigured) {
+  console.warn(
+    "%c[Consumer Grievance Portal] Firebase is not configured. " +
+      "Falling back to mock data. " +
+      "Edit frontend/shared/firebase.js → firebaseConfig.",
+    "color:#b85c00;font-weight:600"
+  );
+} else {
   try {
     const app = initializeApp(firebaseConfig);
     db = getFirestore(app);
+    console.info(
+      "%c[Consumer Grievance Portal] Firebase initialised.",
+      "color:#2e7d5b;font-weight:600",
+      { projectId: firebaseConfig.projectId }
+    );
   } catch (e) {
-    console.warn("Firebase init failed, falling back to mock data:", e);
-    db = null;
+    initError = e;
+    console.error(
+      "[Consumer Grievance Portal] Firebase init failed:",
+      e
+    );
   }
+}
+
+function mapRestaurant(doc) {
+  const data = doc.data ? doc.data() : doc;
+  const rating = data.rating;
+  const numericRating =
+    typeof rating === "number"
+      ? rating
+      : parseFloat(String(rating || "0").replace(/[^\d.-]/g, "")) || 0;
+  return {
+    id: doc.id || data.id || data.license || "",
+    name: data.name || "",
+    license: String(data.license || ""),
+    location: data.location || "",
+    rating: numericRating,
+    cuisine: data.cuisine || "",
+  };
 }
 
 async function fetchRestaurants() {
   if (!db) return null;
   try {
     const snap = await getDocs(collection(db, "restaurants"));
-    return snap.docs.map((doc) => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        name: data.name || "",
-        license: data.license || "",
-        location: data.location || "",
-        rating: Number(data.rating) || 0,
-        cuisine: data.cuisine || "",
-      };
-    });
+    const list = snap.docs.map(mapRestaurant);
+    console.info(
+      `[Consumer Grievance Portal] Firestore /restaurants → ${list.length} documents.`
+    );
+    return list;
   } catch (e) {
-    console.warn("Firestore fetch (restaurants) failed:", e);
+    console.error(
+      "[Consumer Grievance Portal] Firestore fetch (restaurants) failed. " +
+        "Check your security rules and collection name.",
+      e
+    );
     return null;
   }
 }
 
 async function fetchApprovedComments(restaurantId) {
-  if (!db) return null;
+  if (!db || !restaurantId) return null;
   try {
     const q = query(
       collection(db, "comments"),
@@ -77,19 +124,22 @@ async function fetchApprovedComments(restaurantId) {
     const snap = await getDocs(q);
     return snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
   } catch (e) {
-    console.warn("Firestore fetch (comments) failed:", e);
+    console.warn(
+      "[Consumer Grievance Portal] Firestore fetch (comments) failed:",
+      e
+    );
     return null;
   }
 }
 
-// Bridge to non-module page scripts
 window.Portal = {
   isFirebaseReady: Boolean(db),
+  isConfigured,
+  initError,
   fetchRestaurants,
   fetchApprovedComments,
 };
 
-// Notify listeners that the bridge is ready
-window.dispatchEvent(new CustomEvent("portal:ready"));
+window.dispatchEvent(new CustomEvent("portal:ready", { detail: window.Portal }));
 
 export { fetchRestaurants, fetchApprovedComments };
