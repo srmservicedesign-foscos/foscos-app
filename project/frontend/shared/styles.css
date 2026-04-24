@@ -35,6 +35,18 @@
   box-sizing: border-box;
 }
 
+/* ---------- Global SVG safety net ----------
+   Any inline SVG defaults to a small inline icon. Specific containers
+   (stat-icon, icon-circle, etc.) override below. This prevents raw SVGs
+   inserted without a sizing wrapper from stretching to fill their parent. */
+svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  vertical-align: middle;
+  display: inline-block;
+}
+
 html,
 body {
   margin: 0;
@@ -1156,6 +1168,11 @@ a:hover {
   color: var(--danger);
 }
 
+.icon-circle svg {
+  width: 16px;
+  height: 16px;
+}
+
 .icon-circle.lg {
   width: 48px;
   height: 48px;
@@ -1164,6 +1181,45 @@ a:hover {
 .icon-circle.lg svg {
   width: 22px;
   height: 22px;
+}
+
+.stat-card .stat-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.success-icon svg {
+  width: 30px;
+  height: 30px;
+}
+
+.pill svg,
+.chip svg,
+.tag svg,
+.rating-badge svg,
+.meta svg {
+  width: 14px;
+  height: 14px;
+}
+
+.btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.timeline-step .dot svg {
+  width: 14px;
+  height: 14px;
+}
+
+.notice svg,
+.section-heading svg,
+.slider-row label svg,
+.title-chip svg,
+.filter svg,
+.tabs .tab svg {
+  width: 16px;
+  height: 16px;
 }
 
 /* ---------- Icon pills / key-value rows ---------- */
