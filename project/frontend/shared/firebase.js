@@ -53,6 +53,7 @@ import {
   where,
   orderBy,
   serverTimestamp,
+  onSnapshot,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {
   getAuth,
@@ -73,12 +74,34 @@ const firebaseConfig = {
   // ▲▲▲ REPLACE THESE WITH YOUR FIREBASE WEB CONFIG ▲▲▲
 };
 
+/* -------------------- Test phone numbers (demo / jury mode) --------------------
+ * Real Firebase Phone Auth requires the Blaze plan; on the Spark plan it
+ * fails with `auth/billing-not-enabled`. While billing is disabled, you can:
+ *
+ *   (a) ALSO add these numbers in the Firebase console under
+ *       Authentication → Sign-in method → Phone → "Phone numbers for testing".
+ *       Doing so makes the LIVE SDK accept these without sending an SMS.
+ *
+ *   (b) Independently of (a), this module short-circuits the listed test
+ *       numbers on the client so `sendOtp()` always succeeds and
+ *       `verifyOtp(<expected code>)` always works — useful for offline
+ *       prototype demos.
+ *
+ * Add or remove pairs as needed. Values are { phone (E.164): otp }.
+ */
+const TEST_PHONES = {
+  "+919876543210": "123456",
+  "+911111111111": "123456",
+  "+910000000000": "123456",
+};
+
 const isConfigured = Boolean(firebaseConfig.projectId && firebaseConfig.apiKey);
 let db = null;
 let auth = null;
 let initError = null;
 let recaptchaVerifier = null;
 let pendingConfirmation = null;
+let pendingTestOtp = null;
 
 if (!isConfigured) {
   console.warn(
@@ -346,6 +369,103 @@ async function updateComplaint(complaintId, updates) {
   }
 }
 
+/* -------------------- Real-time subscriptions -------------------- */
+/* Each subscriber returns an unsubscribe function. When Firestore is not
+ * configured, the subscriber pushes a one-shot snapshot from session
+ * storage so the UI still renders. */
+
+function subscribeComplaintById(complaintId, cb) {
+  if (!complaintId) {
+    cb(null);
+    return () => {};
+  }
+  if (!db) {
+    const all = JSON.parse(sessionStorage.getItem("cgpComplaints") || "[]");
+    cb(all.find((c) => c.complaintId === complaintId) || null);
+    return () => {};
+  }
+  const ref = doc(db, "complaints", complaintId);
+  return onSnapshot(
+    ref,
+    (snap) => cb(snap.exists() ? snap.data() : null),
+    (err) => {
+      console.warn("[Consumer Grievance Portal] subscribeComplaintById error:", err);
+    }
+  );
+}
+
+function subscribeComplaintsByPhone(phone, cb) {
+  const normalized = normalizePhone(phone);
+  if (!db) {
+    cb(localComplaintsFallback((c) => c.consumerPhone === normalized));
+    return () => {};
+  }
+  if (!normalized) {
+    cb([]);
+    return () => {};
+  }
+  const q = query(
+    collection(db, "complaints"),
+    where("consumerPhone", "==", normalized)
+  );
+  return onSnapshot(
+    q,
+    (snap) => cb(sortByCreatedAtDesc(snap.docs.map((d) => d.data()))),
+    (err) => {
+      console.warn("[Consumer Grievance Portal] subscribeComplaintsByPhone error:", err);
+    }
+  );
+}
+
+function subscribeComplaintsForFbo({ license, restaurantId } = {}, cb) {
+  if (!db) {
+    cb(
+      localComplaintsFallback(
+        (c) =>
+          (license && c.restaurantLicense === license) ||
+          (restaurantId && c.restaurantId === restaurantId)
+      )
+    );
+    return () => {};
+  }
+  let q;
+  if (license) {
+    q = query(
+      collection(db, "complaints"),
+      where("restaurantLicense", "==", license)
+    );
+  } else if (restaurantId) {
+    q = query(
+      collection(db, "complaints"),
+      where("restaurantId", "==", restaurantId)
+    );
+  } else {
+    cb([]);
+    return () => {};
+  }
+  return onSnapshot(
+    q,
+    (snap) => cb(sortByCreatedAtDesc(snap.docs.map((d) => d.data()))),
+    (err) => {
+      console.warn("[Consumer Grievance Portal] subscribeComplaintsForFbo error:", err);
+    }
+  );
+}
+
+function subscribeAllComplaints(cb) {
+  if (!db) {
+    cb(localComplaintsFallback());
+    return () => {};
+  }
+  return onSnapshot(
+    collection(db, "complaints"),
+    (snap) => cb(sortByCreatedAtDesc(snap.docs.map((d) => d.data()))),
+    (err) => {
+      console.warn("[Consumer Grievance Portal] subscribeAllComplaints error:", err);
+    }
+  );
+}
+
 /* ---- FBO action wrappers ---- */
 const fbo = {
   sendThankYou: (id) =>
@@ -439,29 +559,75 @@ function ensureRecaptcha(containerId = "recaptcha-container") {
 
 async function sendOtp(phone) {
   const normalized = normalizePhone(phone);
+
+  // Local short-circuit for test phone numbers (works even without Firebase)
+  if (TEST_PHONES[normalized]) {
+    pendingTestOtp = { phone: normalized, code: TEST_PHONES[normalized] };
+    pendingConfirmation = null;
+    console.info(
+      "%c[Consumer Grievance Portal] Test phone — use OTP " + TEST_PHONES[normalized],
+      "color:#b85c00;font-weight:600"
+    );
+    return { ok: true, demo: true, hint: TEST_PHONES[normalized] };
+  }
+
   if (!auth) {
-    // Local fallback — pretend we "sent" an OTP
+    // Local fallback — pretend we "sent" an OTP (any 6 digits will verify)
     window.__mockOtpPhone = normalized;
+    pendingTestOtp = null;
+    pendingConfirmation = null;
     return { ok: true, mock: true };
   }
+
   try {
     const verifier = ensureRecaptcha();
     pendingConfirmation = await signInWithPhoneNumber(auth, normalized, verifier);
+    pendingTestOtp = null;
     return { ok: true };
   } catch (e) {
     console.error("[Consumer Grievance Portal] sendOtp failed:", e);
     // Reset reCAPTCHA so a retry can re-render it
     try { recaptchaVerifier && recaptchaVerifier.clear && recaptchaVerifier.clear(); } catch (_) {}
     recaptchaVerifier = null;
+
+    // Translate billing-not-enabled into something a demo-runner can act on
+    if (e && e.code === "auth/billing-not-enabled") {
+      const friendly = new Error(
+        "Phone Auth requires the Firebase Blaze plan. " +
+          "For the prototype, use a registered test phone number (e.g. " +
+          Object.keys(TEST_PHONES)[0] +
+          " with OTP " +
+          TEST_PHONES[Object.keys(TEST_PHONES)[0]] +
+          ") or add this number under " +
+          "Authentication → Phone → Phone numbers for testing in the Firebase console."
+      );
+      friendly.code = e.code;
+      throw friendly;
+    }
     throw e;
   }
 }
 
 async function verifyOtp(code) {
-  if (!auth) {
-    if (String(code).length !== 6) throw new Error("Invalid code");
-    return { uid: "mock-" + (window.__mockOtpPhone || "user"), phoneNumber: window.__mockOtpPhone || "" };
+  // Test-phone path
+  if (pendingTestOtp) {
+    if (String(code) !== String(pendingTestOtp.code)) {
+      throw new Error("Invalid demo OTP. Use " + pendingTestOtp.code + ".");
+    }
+    const phone = pendingTestOtp.phone;
+    pendingTestOtp = null;
+    return { uid: "test-" + phone, phoneNumber: phone };
   }
+
+  // Mock fallback when Firebase auth isn't initialised
+  if (!auth) {
+    if (String(code).length !== 6) throw new Error("Invalid code.");
+    return {
+      uid: "mock-" + (window.__mockOtpPhone || "user"),
+      phoneNumber: window.__mockOtpPhone || "",
+    };
+  }
+
   if (!pendingConfirmation) throw new Error("Please request an OTP first.");
   try {
     const result = await pendingConfirmation.confirm(code);
@@ -539,6 +705,13 @@ window.Portal = {
   updateComplaint,
   fbo,
   fso,
+  // Real-time subscriptions
+  subscribeComplaintById,
+  subscribeComplaintsByPhone,
+  subscribeComplaintsForFbo,
+  subscribeAllComplaints,
+  // Demo support
+  testPhones: TEST_PHONES,
   // Auth / OTP
   sendOtp,
   verifyOtp,
@@ -563,6 +736,11 @@ export {
   updateComplaint,
   fbo,
   fso,
+  subscribeComplaintById,
+  subscribeComplaintsByPhone,
+  subscribeComplaintsForFbo,
+  subscribeAllComplaints,
+  TEST_PHONES,
   sendOtp,
   verifyOtp,
   onAuthChanged,

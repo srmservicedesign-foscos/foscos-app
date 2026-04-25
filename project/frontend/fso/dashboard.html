@@ -609,17 +609,20 @@
       qs("#fboDetailComplaints").addEventListener("click", onComplaintsClick);
 
       /* ---------- Bootstrap ---------- */
+      let unsubLive = null;
+
+      function refreshAll() {
+        updateStats();
+        renderComplaints();
+        renderFboDatabase();
+      }
+
       async function boot() {
         if (window.Portal && window.Portal.fetchRestaurants) {
           const r = await window.Portal.fetchRestaurants();
           restaurants = (r && r.length ? r : MOCK_RESTAURANTS);
         } else {
           restaurants = MOCK_RESTAURANTS;
-        }
-
-        if (window.Portal && window.Portal.fetchAllComplaints) {
-          const list = await window.Portal.fetchAllComplaints();
-          allComplaints = Array.isArray(list) ? list : [];
         }
 
         // Populate jurisdiction dropdown from SHILLONG_AREAS
@@ -633,9 +636,19 @@
           });
         }
 
-        updateStats();
-        renderComplaints();
-        renderFboDatabase();
+        // Live subscription so newly filed / updated complaints stream in
+        if (window.Portal && window.Portal.subscribeAllComplaints) {
+          unsubLive = window.Portal.subscribeAllComplaints((list) => {
+            allComplaints = Array.isArray(list) ? list : [];
+            refreshAll();
+          });
+        } else if (window.Portal && window.Portal.fetchAllComplaints) {
+          const list = await window.Portal.fetchAllComplaints();
+          allComplaints = Array.isArray(list) ? list : [];
+          refreshAll();
+        } else {
+          refreshAll();
+        }
       }
 
       if (window.Portal) boot();

@@ -80,12 +80,12 @@
         </div>
 
         <section id="nearbySection">
-          <div class="flex-between flex-wrap" style="gap: 10px">
-            <h2 class="section-heading" style="margin: 0 auto 0 0">
+          <div class="section-row">
+            <h2 class="section-heading">
               <span class="icon" id="nearbyIcon"></span>
               Nearby Registered Restaurants
             </h2>
-            <div class="flex" style="gap: 8px; flex-wrap: wrap">
+            <div class="section-tools">
               <span class="pill sage" id="nearbyCount"></span>
               <div class="area-filter">
                 <span>📍</span>
@@ -296,40 +296,23 @@
             <article class="restaurant-card" data-id="${r.id}">
               <div class="image">
                 <span class="monogram">${initials(r.name)}</span>
-                <span class="badge-top">
-                  ${icon("star", "sm")} ${Number(r.rating).toFixed(1)}
-                </span>
-                <span class="pill sage" style="position:absolute; left: 10px; top: 10px; font-size: 10.5px">
-                  ${icon("verified", "sm")} FSSAI
-                </span>
+                <span class="verified-pill">✅ FSSAI</span>
+                <span class="badge-top">⭐ ${Number(r.rating).toFixed(1)}</span>
               </div>
               <div class="body">
                 <h3>${r.name}</h3>
-                <div class="meta">${icon("pin", "sm")} ${r.location || ""}</div>
+                <div class="meta">📍 ${r.location || ""}</div>
                 ${
                   r.cuisine
-                    ? `<div class="meta" style="margin-top: 4px">${icon(
-                        "utensils",
-                        "sm"
-                      )} ${r.cuisine}</div>`
+                    ? `<div class="meta">🍽 ${r.cuisine}</div>`
                     : ""
                 }
-                <div class="flex-between" style="margin-top: 12px">
-                  <span class="tag">${icon(
-                    "shield",
-                    "sm"
-                  )} ${r.license}</span>
+                <div class="restaurant-foot">
+                  <span class="tag">🛡 ${r.license}</span>
                   <span class="stars">${renderStars(r.rating)}</span>
-                </div>
-                <div class="flex" style="gap: 8px; margin-top: 10px">
-                  <span class="pill" style="font-size: 10.5px">${icon(
-                    "eye",
-                    "sm"
-                  )} View</span>
-                  <span class="pill amber" style="font-size: 10.5px">${icon(
-                    "star",
-                    "sm"
-                  )} Rate</span>
+                  <span class="pill" style="font-size: 11px; margin-left: auto">
+                    👁 View · ⭐ Rate
+                  </span>
                 </div>
               </div>
             </article>`

@@ -171,6 +171,17 @@
         qs("#otpError").classList.add("hidden");
       }
 
+      function setDemoBanner(hint) {
+        let b = qs("#demoBanner");
+        if (!b) {
+          b = document.createElement("div");
+          b.id = "demoBanner";
+          b.className = "demo-banner";
+          qs("#otpPhoneLabel").parentNode.appendChild(b);
+        }
+        b.textContent = `Demo mode — use OTP ${hint}`;
+      }
+
       qs("#sendOtpBtn").addEventListener("click", async () => {
         hideLoginError();
         const phone = qs("#loginPhone").value.trim();
@@ -182,13 +193,19 @@
         btn.disabled = true;
         btn.textContent = "Sending…";
         try {
-          if (window.Portal && window.Portal.isAuthReady) {
-            await window.Portal.sendOtp(phone);
+          let res = { ok: true };
+          if (window.Portal) {
+            res = await window.Portal.sendOtp(phone);
           }
           qs("#otpPhoneLabel").textContent =
             (window.Portal && window.Portal.normalizePhone
               ? window.Portal.normalizePhone(phone)
               : phone);
+          const oldBanner = qs("#demoBanner");
+          if (oldBanner) oldBanner.remove();
+          if (res && (res.demo || res.mock)) {
+            setDemoBanner(res.hint || "any 6 digits");
+          }
           qs("#loginStep").classList.add("hidden");
           qs("#otpStep").classList.remove("hidden");
         } catch (e) {
@@ -215,14 +232,14 @@
         btn.disabled = true;
         btn.textContent = "Verifying…";
         try {
-          if (window.Portal && window.Portal.isAuthReady) {
+          if (window.Portal) {
             await window.Portal.verifyOtp(code);
           }
           const phone = qs("#otpPhoneLabel").textContent;
           Store.set("consumerPhone", phone);
           qs("#otpStep").classList.add("hidden");
           qs("#dashboardStep").classList.remove("hidden");
-          await renderComplaints(phone);
+          startLive(phone);
         } catch (e) {
           showOtpError(
             (e && e.message) || "OTP verification failed."
@@ -284,21 +301,28 @@
         qs("#fsoCall").href = `tel:${officer.contact.replace(/[^\d+]/g, "")}`;
       }
 
-      async function loadComplaints(phone) {
-        let remote = null;
-        if (window.Portal && window.Portal.fetchComplaintsByPhone) {
-          remote = await window.Portal.fetchComplaintsByPhone(phone);
+      let unsubLive = null;
+
+      function startLive(phone) {
+        if (unsubLive) { try { unsubLive(); } catch (_) {} unsubLive = null; }
+        if (window.Portal && window.Portal.subscribeComplaintsByPhone) {
+          unsubLive = window.Portal.subscribeComplaintsByPhone(phone, (remote) => {
+            renderComplaintsList(remote && remote.length ? remote : null);
+          });
+        } else {
+          renderComplaintsList(null);
         }
+      }
+
+      function buildList(remote) {
+        if (remote && remote.length) return remote.map(normalizeComplaintRow);
         const local = Store.get("userComplaints", []);
-        if (remote && remote.length) {
-          return remote.map(normalizeComplaintRow);
-        }
         if (local.length) return local.map(normalizeComplaintRow);
         return MOCK_COMPLAINTS.map(normalizeComplaintRow);
       }
 
-      async function renderComplaints(phone) {
-        const all = await loadComplaints(phone);
+      function renderComplaintsList(remote) {
+        const all = buildList(remote);
         const listEl = qs("#complaintList");
 
         qs("#sdTotal").textContent = all.length;
@@ -413,7 +437,7 @@
                 qs("#otpStep").classList.add("hidden");
                 qs("#dashboardStep").classList.remove("hidden");
                 Store.set("consumerPhone", user.phoneNumber);
-                await renderComplaints(user.phoneNumber);
+                startLive(user.phoneNumber);
               }
             });
           }

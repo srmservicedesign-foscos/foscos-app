@@ -369,7 +369,14 @@ function renderNavbar(active = "home") {
   const links = [
     { href: "/consumer/index.html", key: "home", label: "Home", icon: "home" },
     { href: "#officer", key: "officer", label: "Find an Officer", icon: "officer" },
-    { href: "#rules", key: "rules", label: "Rules & Regulations", icon: "book" },
+    {
+      href:
+        "https://www.indiacode.nic.in/bitstream/123456789/7800/1/200634_food_safety_and_standards_act%2C_2006.pdf",
+      key: "rules",
+      label: "Rules & Regulations",
+      icon: "book",
+      external: true,
+    },
     { href: "https://www.fssai.gov.in", key: "fssai", label: "FSSAI", icon: "shield" },
   ];
 
@@ -385,10 +392,10 @@ function renderNavbar(active = "home") {
       <nav>
         ${links
           .map((l) => {
-            const target =
-              l.key === "fssai"
-                ? 'target="_blank" rel="noopener"'
-                : "";
+            const isExternal = l.key === "fssai" || l.external;
+            const target = isExternal
+              ? 'target="_blank" rel="noopener"'
+              : "";
             return `<a href="${l.href}" ${target} class="${
               l.key === active ? "active" : ""
             }" data-navkey="${l.key}">${icon(l.icon, "sm")} ${l.label}</a>`;
@@ -463,7 +470,9 @@ function openOfficerModal() {
   if (inp) inp.focus();
 }
 
-/* Wire navbar-level triggers after it's injected */
+/* Wire navbar-level triggers after it's injected.
+ * The "Rules & Regulations" link is now a real anchor pointing at the
+ * official FSSAI Act 2006 PDF and opens in a new tab — no JS hijack. */
 function wireNavbarTriggers() {
   document.addEventListener("click", (e) => {
     const a = e.target.closest("a[data-navkey]");
@@ -471,11 +480,6 @@ function wireNavbarTriggers() {
     if (a.dataset.navkey === "officer") {
       e.preventDefault();
       openOfficerModal();
-    } else if (a.dataset.navkey === "rules") {
-      e.preventDefault();
-      alert(
-        "Rules & Regulations — Food Safety and Standards Act, 2006 and allied regulations. (Link placeholder)"
-      );
     }
   });
 }

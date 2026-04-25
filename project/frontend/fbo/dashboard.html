@@ -501,13 +501,29 @@
         return MOCK_RESTAURANTS;
       }
 
-      async function loadComplaints(license) {
-        if (!license) return [];
-        if (window.Portal && window.Portal.fetchComplaintsForFbo) {
-          const list = await window.Portal.fetchComplaintsForFbo({ license });
-          if (Array.isArray(list)) return list;
+      let unsubLive = null;
+
+      function startLiveForLicense(license) {
+        if (unsubLive) { try { unsubLive(); } catch (_) {} unsubLive = null; }
+        if (!license) {
+          complaints = [];
+          updateStats();
+          render();
+          return;
         }
-        return [];
+        if (window.Portal && window.Portal.subscribeComplaintsForFbo) {
+          unsubLive = window.Portal.subscribeComplaintsForFbo({ license }, (list) => {
+            complaints = Array.isArray(list) ? list : [];
+            updateStats();
+            render();
+          });
+        } else if (window.Portal && window.Portal.fetchComplaintsForFbo) {
+          window.Portal.fetchComplaintsForFbo({ license }).then((list) => {
+            complaints = Array.isArray(list) ? list : [];
+            updateStats();
+            render();
+          });
+        }
       }
 
       function populateRestaurantSelect() {
@@ -525,7 +541,7 @@
         }
       }
 
-      async function onIdentityChange() {
+      function onIdentityChange() {
         selectedLicense = qs("#restaurantSelect").value;
         sessionStorage.setItem(FBO_SELECT_KEY, selectedLicense);
         const r = restaurants.find((x) => x.license === selectedLicense);
@@ -536,9 +552,7 @@
         } else {
           badge.classList.add("hidden");
         }
-        complaints = await loadComplaints(selectedLicense);
-        updateStats();
-        render();
+        startLiveForLicense(selectedLicense);
       }
 
       qs("#restaurantSelect").addEventListener("change", onIdentityChange);
@@ -547,7 +561,7 @@
         restaurants = await loadRestaurants();
         populateRestaurantSelect();
         if (qs("#restaurantSelect").value) {
-          await onIdentityChange();
+          onIdentityChange();
         } else {
           updateStats();
           render();

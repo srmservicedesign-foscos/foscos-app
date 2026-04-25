@@ -70,6 +70,7 @@
 
         <hr class="divider-dashed" />
         <p class="muted" id="trkComment" style="margin-top: 8px"></p>
+        <div id="trkNotices"></div>
 
         <!-- Rating breakdown (shown when complaint has parameter ratings) -->
         <div id="ratingBreakdown" class="kv-grid hidden">
@@ -190,6 +191,7 @@
         if (c.restaurantLicense) {
           qs("#trkLicense").innerHTML = `<span>🛡</span> FSSAI: ${c.restaurantLicense}`;
         }
+        qs("#trkFlag").innerHTML = "";
         if (c.flaggedByFBO) {
           qs("#trkFlag").innerHTML =
             '<span class="pill amber" style="font-size: 11px">🚨 Flagged — serious</span>';
@@ -197,17 +199,19 @@
           qs("#trkFlag").innerHTML =
             '<span class="pill amber" style="font-size: 11px">🔥 Escalated by FSO</span>';
         }
+        const notices = qs("#trkNotices");
+        notices.innerHTML = "";
         if (c.improvementUpdate) {
-          qs("#trkComment").insertAdjacentHTML(
-            "afterend",
+          notices.insertAdjacentHTML(
+            "beforeend",
             `<div class="notice sage" style="margin-top: 10px">
                <span>📝</span> <strong>FBO improvement update:</strong> ${c.improvementUpdate}
              </div>`
           );
         }
         if (c.FSOAction) {
-          qs("#trkComment").insertAdjacentHTML(
-            "afterend",
+          notices.insertAdjacentHTML(
+            "beforeend",
             `<div class="notice navy" style="margin-top: 10px">
                <span>🏛</span> <strong>FSO action:</strong> ${c.FSOAction}${
               c.officialNote ? ` — "${c.officialNote}"` : ""
@@ -287,25 +291,28 @@
 
       async function boot() {
         const id = getParam("id");
-        // Try local sources first for instant render
+        // Instant paint from local cache for snappy first render
         const local = Store.get("userComplaints", []);
         const all = [...local, ...MOCK_COMPLAINTS];
-        const localMatch = id
-          ? all.find((x) => x.id === id)
-          : all[0];
+        const localMatch = id ? all.find((x) => x.id === id) : all[0];
         if (localMatch) render(normalize(localMatch));
 
-        // Try Firestore for authoritative copy
-        const tryRemote = async () => {
+        // Live subscription so FBO/FSO actions stream in immediately
+        const subscribe = () => {
           if (!id) return;
-          if (window.Portal && window.Portal.fetchComplaintById) {
-            const remote = await window.Portal.fetchComplaintById(id);
-            if (remote) render(normalize(remote));
+          if (window.Portal && window.Portal.subscribeComplaintById) {
+            window.Portal.subscribeComplaintById(id, (remote) => {
+              if (remote) render(normalize(remote));
+            });
+          } else if (window.Portal && window.Portal.fetchComplaintById) {
+            window.Portal.fetchComplaintById(id).then((remote) => {
+              if (remote) render(normalize(remote));
+            });
           }
         };
 
-        if (window.Portal) tryRemote();
-        else window.addEventListener("portal:ready", tryRemote, { once: true });
+        if (window.Portal) subscribe();
+        else window.addEventListener("portal:ready", subscribe, { once: true });
       }
       boot();
     </script>

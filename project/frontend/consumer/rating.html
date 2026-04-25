@@ -153,13 +153,45 @@
 
           <label class="label" for="goodName">
             <span id="gIcon2"></span> Your name
+            <span class="field-req">*</span>
           </label>
-          <input id="goodName" class="input" type="text" />
+          <input id="goodName" class="input" type="text" required />
 
           <label class="label" for="goodPhone">
             <span id="gIcon3"></span> Phone number
+            <span class="field-req">*</span>
           </label>
-          <input id="goodPhone" class="input" type="tel" />
+          <input id="goodPhone" class="input" type="tel" required />
+        </div>
+
+        <!-- Mandatory self-declaration before submission -->
+        <div class="card" id="declarationBlock">
+          <h3>📜 Self Declaration</h3>
+          <p class="muted" style="margin-top: 4px">
+            Please confirm both statements below before submitting your
+            grievance. Both confirmations are mandatory.
+          </p>
+
+          <label class="declaration-row">
+            <input type="checkbox" id="decl1" />
+            <span>
+              I hereby declare that the information and evidence provided by me
+              is true to the best of my knowledge.
+              <span class="field-req">*</span>
+            </span>
+          </label>
+
+          <label class="declaration-row">
+            <input type="checkbox" id="decl2" />
+            <span>
+              I understand that if further investigation is required, I may be
+              contacted by the Food Safety Officer (FSO), and I am willing to
+              cooperate. I accept responsibility for the grievance submitted.
+              <span class="field-req">*</span>
+            </span>
+          </label>
+
+          <div id="declError" class="notice hidden" style="margin-top: 10px"></div>
         </div>
 
         <button id="continueBtn" class="btn block">
@@ -340,14 +372,40 @@
         qs("#otpError").classList.add("hidden");
       }
 
+      function showDeclError(msg) {
+        const el = qs("#declError");
+        el.innerHTML = "⚠ " + msg;
+        el.classList.remove("hidden");
+      }
+
+      function hideDeclError() {
+        qs("#declError").classList.add("hidden");
+      }
+
+      function setDemoBanner(hint) {
+        let b = qs("#demoBanner");
+        if (!b) {
+          b = document.createElement("div");
+          b.id = "demoBanner";
+          b.className = "demo-banner";
+          qs("#otpPhone").parentNode.appendChild(b);
+        }
+        b.textContent = `Demo mode — use OTP ${hint}`;
+      }
+
       async function gotoOtpStep(phone) {
         qs("#otpPhone").textContent = phone;
         qs("#rateStep").classList.add("hidden");
         qs("#otpStep").classList.remove("hidden");
         hideOtpError();
-        if (window.Portal && window.Portal.isAuthReady) {
+        const oldBanner = qs("#demoBanner");
+        if (oldBanner) oldBanner.remove();
+        if (window.Portal && (window.Portal.isAuthReady || window.Portal.testPhones)) {
           try {
-            await window.Portal.sendOtp(phone);
+            const res = await window.Portal.sendOtp(phone);
+            if (res && (res.demo || res.mock)) {
+              setDemoBanner(res.hint || "any 6 digits");
+            }
           } catch (e) {
             showOtpError(
               (e && e.message) ||
@@ -395,6 +453,18 @@
           return;
         }
 
+        // Mandatory self-declaration
+        const decl1 = qs("#decl1").checked;
+        const decl2 = qs("#decl2").checked;
+        if (!decl1 || !decl2) {
+          showDeclError(
+            "Please confirm both self-declaration statements before submitting."
+          );
+          qs("#declarationBlock").scrollIntoView({ behavior: "smooth", block: "center" });
+          return;
+        }
+        hideDeclError();
+
         const [evidenceData, billData] = await Promise.all([
           readFileAsDataUrl(evidenceFile),
           readFileAsDataUrl(billFile),
@@ -429,15 +499,16 @@
         e.preventDefault();
         const phone = qs("#otpPhone").textContent;
         hideOtpError();
-        if (window.Portal && window.Portal.isAuthReady) {
-          try {
-            await window.Portal.sendOtp(phone);
-            alert("OTP resent.");
-          } catch (err) {
-            showOtpError((err && err.message) || "Resend failed.");
+        try {
+          const res = window.Portal
+            ? await window.Portal.sendOtp(phone)
+            : { ok: true, mock: true };
+          if (res && (res.demo || res.mock)) {
+            setDemoBanner(res.hint || "any 6 digits");
           }
-        } else {
-          alert("OTP resent (demo mode — any 6 digits will work).");
+          alert("OTP resent.");
+        } catch (err) {
+          showOtpError((err && err.message) || "Resend failed.");
         }
       });
 
