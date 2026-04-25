@@ -46,13 +46,6 @@
 
         <div class="kv-grid">
           <div class="kv">
-            <span class="icon-circle">🛡</span>
-            <div>
-              <div class="kv-label">Category</div>
-              <div class="kv-value">Food Safety</div>
-            </div>
-          </div>
-          <div class="kv">
             <span class="icon-circle sage">🪪</span>
             <div>
               <div class="kv-label">Jurisdiction</div>
@@ -125,9 +118,6 @@
         <a href="dashboard.html" class="btn secondary">
           <span>←</span> Back to Dashboard
         </a>
-        <button class="btn" id="contactOfficerBtn">
-          <span>🏛</span> Find Another Officer
-        </button>
       </div>
     </main>
 
@@ -135,7 +125,6 @@
     <script type="module" src="/static/firebase.js"></script>
     <script>
       qs("#navbar").innerHTML = renderNavbar("home");
-      qs("#contactOfficerBtn").addEventListener("click", openOfficerModal);
 
       function getParam(name) {
         return new URLSearchParams(window.location.search).get(name);
