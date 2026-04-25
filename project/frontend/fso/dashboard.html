@@ -17,130 +17,204 @@
     <main class="container">
       <h1 class="page-title">Food Safety Officer — Admin Panel</h1>
       <p class="subtitle">
-        Investigate consumer complaints, review registered Food Business
-        Operators, and take regulatory action. All complaints within your
-        jurisdiction are visible here, even when FBOs have not flagged them.
+        Investigate consumer complaints across Shillong and take regulatory
+        action. All complaints in your jurisdiction are visible — even when
+        the FBO has not flagged them.
       </p>
 
-      <!-- Jurisdiction identity -->
-      <div class="identity-bar">
-        <span class="identity-label">🏛 Jurisdiction</span>
-        <select id="jurisSelect">
-          <option value="">All Shillong, Meghalaya</option>
-        </select>
-        <span id="jurisBadge" class="identity-badge hidden"></span>
-      </div>
+      <!-- ========== LOGIN: Step 1 — FSO ID + phone ========== -->
+      <section id="loginStep">
+        <div class="card login-card">
+          <h3>🔐 FSO Sign In</h3>
+          <p class="muted" style="margin-top: 4px">
+            Enter your Officer credentials to access the admin panel.
+          </p>
 
-      <!-- Stats -->
-      <div class="stat-grid">
-        <div class="stat-card">
-          <span class="stat-icon">📄</span>
-          <div>
-            <div class="stat-label">Total Complaints</div>
-            <div class="stat-value" id="fsoTotal">0</div>
-            <div class="stat-hint">in jurisdiction</div>
-          </div>
-        </div>
-        <div class="stat-card">
-          <span class="stat-icon amber">⏱</span>
-          <div>
-            <div class="stat-label">Pending</div>
-            <div class="stat-value" id="fsoPending">0</div>
-            <div class="stat-hint">awaiting triage</div>
-          </div>
-        </div>
-        <div class="stat-card">
-          <span class="stat-icon" style="background: #0c5460">🔎</span>
-          <div>
-            <div class="stat-label">Under Review</div>
-            <div class="stat-value" id="fsoReview">0</div>
-            <div class="stat-hint">inspections open</div>
-          </div>
-        </div>
-        <div class="stat-card">
-          <span class="stat-icon danger">🚨</span>
-          <div>
-            <div class="stat-label">Flagged by FBO</div>
-            <div class="stat-value" id="fsoFlagged">0</div>
-            <div class="stat-hint">urgent review</div>
-          </div>
-        </div>
-        <div class="stat-card">
-          <span class="stat-icon sage">✅</span>
-          <div>
-            <div class="stat-label">Resolved</div>
-            <div class="stat-value" id="fsoResolved">0</div>
-            <div class="stat-hint">closed</div>
-          </div>
-        </div>
-      </div>
+          <label class="label" for="fsoId">
+            🪪 FSO ID Number <span class="field-req">*</span>
+          </label>
+          <input
+            id="fsoId"
+            class="input"
+            type="text"
+            autocomplete="off"
+            placeholder="e.g. FSO-MEG-0042"
+          />
 
-      <!-- Tabs -->
-      <div class="tabs">
-        <button class="tab active" data-tab="complaints">
-          <span>📋</span> Complaints
-        </button>
-        <button class="tab" data-tab="fbo">
-          <span>🏢</span> FBO Database
-        </button>
-      </div>
+          <label class="label" for="fsoPhone">
+            📞 Registered Phone Number <span class="field-req">*</span>
+          </label>
+          <input
+            id="fsoPhone"
+            class="input"
+            type="tel"
+            placeholder="+91 XXXXX XXXXX"
+          />
 
-      <!-- Complaints tab -->
-      <section id="tab-complaints">
-        <div class="filter-row">
-          <button class="filter active" data-filter="all">
-            <span>🔲</span> All
+          <button id="fsoSendOtp" class="btn block" style="margin-top: 16px">
+            🔑 Send OTP
           </button>
-          <button class="filter" data-filter="Submitted">
-            <span>📥</span> Submitted
-          </button>
-          <button class="filter" data-filter="Under Review">
-            <span>⏱</span> Under Review
-          </button>
-          <button class="filter" data-filter="Action Taken">
-            <span>✅</span> Action Taken
-          </button>
-          <button class="filter" data-filter="flagged">
-            <span>🚨</span> Flagged
-          </button>
-          <button class="filter" data-filter="escalated">
-            <span>🔥</span> Escalated
-          </button>
+          <div id="fsoLoginErr" class="notice hidden" style="margin-top: 10px"></div>
+          <p class="muted" style="font-size: 12px; margin-top: 10px">
+            Demo mode — any 6 digits will verify. No live SMS sent.
+          </p>
         </div>
-
-        <div id="complaintsList"></div>
       </section>
 
-      <!-- FBO Database tab -->
-      <section id="tab-fbo" class="hidden">
-        <h2 class="section-heading">
-          <span>🏢</span> Registered Food Businesses
-          <span class="pill navy" style="margin-left: auto" id="fboCount"></span>
-        </h2>
-        <table class="table">
-          <thead>
-            <tr>
-              <th>License #</th>
-              <th>Name</th>
-              <th>Location</th>
-              <th>Complaints</th>
-              <th>Flagged</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody id="fboTable"></tbody>
-        </table>
+      <!-- ========== LOGIN: Step 2 — OTP ========== -->
+      <section id="otpStep" class="hidden">
+        <div class="card login-card">
+          <h3>Enter OTP</h3>
+          <p class="muted">
+            6-digit code sent to <strong id="fsoOtpPhone"></strong>.
+          </p>
+          <div class="otp-boxes" id="fsoOtpBoxes">
+            <input type="text" inputmode="numeric" maxlength="1" />
+            <input type="text" inputmode="numeric" maxlength="1" />
+            <input type="text" inputmode="numeric" maxlength="1" />
+            <input type="text" inputmode="numeric" maxlength="1" />
+            <input type="text" inputmode="numeric" maxlength="1" />
+            <input type="text" inputmode="numeric" maxlength="1" />
+          </div>
+          <button id="fsoVerify" class="btn block">✔ Verify OTP</button>
+          <div id="fsoOtpErr" class="notice hidden" style="margin-top: 10px"></div>
+          <p class="muted" style="text-align: center; margin-top: 10px">
+            <a href="#" id="fsoLoginBack">← Change details</a>
+          </p>
+        </div>
+      </section>
 
-        <section id="fboDetail" class="hidden" style="margin-top: 24px">
-          <h3 id="fboDetailTitle" class="section-heading"></h3>
-          <div id="fboDetailComplaints"></div>
-          <button id="closeFboDetail" class="btn secondary small">
-            <span>✕</span> Close
+      <!-- ========== Dashboard ========== -->
+      <section id="dashboardStep" class="hidden">
+        <div class="identity-bar">
+          <span class="identity-label">🏛 Signed In</span>
+          <span id="fsoBadge" class="identity-badge"></span>
+          <button id="fsoSignOut" class="btn small secondary" style="margin-left: auto">
+            ↩ Sign Out
           </button>
+        </div>
+
+        <!-- Stats -->
+        <div class="stat-grid">
+          <div class="stat-card">
+            <span class="stat-icon">📄</span>
+            <div>
+              <div class="stat-label">Total Complaints</div>
+              <div class="stat-value" id="fsoTotal">0</div>
+              <div class="stat-hint">in Shillong</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <span class="stat-icon amber">📥</span>
+            <div>
+              <div class="stat-label">New</div>
+              <div class="stat-value" id="fsoNew">0</div>
+              <div class="stat-hint">awaiting triage</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <span class="stat-icon" style="background: #0c5460">🔎</span>
+            <div>
+              <div class="stat-label">Under Review</div>
+              <div class="stat-value" id="fsoReview">0</div>
+              <div class="stat-hint">inspections open</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <span class="stat-icon sage">✅</span>
+            <div>
+              <div class="stat-label">Resolved</div>
+              <div class="stat-value" id="fsoResolved">0</div>
+              <div class="stat-hint">closed</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <span class="stat-icon danger">🚨</span>
+            <div>
+              <div class="stat-label">Flagged by FBO</div>
+              <div class="stat-value" id="fsoFlagged">0</div>
+              <div class="stat-hint">priority review</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+          <button class="tab active" data-tab="complaints">
+            <span>📋</span> Complaints
+          </button>
+          <button class="tab" data-tab="fbo">
+            <span>🏢</span> FBO Database
+          </button>
+        </div>
+
+        <!-- Complaints tab -->
+        <section id="tab-complaints">
+          <div class="filter-row">
+            <button class="filter active" data-filter="all">🔲 All</button>
+            <button class="filter" data-filter="new">📥 New</button>
+            <button class="filter" data-filter="review">⏱ Under Review</button>
+            <button class="filter" data-filter="resolved">✅ Resolved</button>
+          </div>
+
+          <div id="complaintsList"></div>
         </section>
-      </section>
 
-      <div class="spacer-lg"></div>
+        <!-- FBO Database tab -->
+        <section id="tab-fbo" class="hidden">
+          <div class="section-row">
+            <h2 class="section-heading" style="margin: 0">
+              <span>🏢</span> Registered Food Businesses
+            </h2>
+            <div class="section-tools">
+              <span class="pill navy" id="fboCount"></span>
+            </div>
+          </div>
+
+          <!-- Search + Area filter -->
+          <div class="flex flex-wrap" style="gap: 12px; margin-bottom: 14px">
+            <div class="searchbar inline" style="flex: 1; min-width: 240px">
+              <span>🔍</span>
+              <input
+                id="fboSearch"
+                type="text"
+                placeholder="Search by restaurant name or license number"
+              />
+            </div>
+            <div class="area-filter">
+              <span>📍</span>
+              <label for="fboArea">Area</label>
+              <select id="fboArea">
+                <option value="">All areas</option>
+              </select>
+            </div>
+          </div>
+
+          <table class="table">
+            <thead>
+              <tr>
+                <th>License #</th>
+                <th>Name</th>
+                <th>Location</th>
+                <th>Complaints</th>
+                <th>Flagged</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="fboTable"></tbody>
+          </table>
+
+          <section id="fboDetail" class="hidden" style="margin-top: 24px">
+            <h3 id="fboDetailTitle" class="section-heading"></h3>
+            <div id="fboDetailComplaints"></div>
+            <button id="closeFboDetail" class="btn secondary small">
+              <span>✕</span> Close
+            </button>
+          </section>
+        </section>
+
+        <div class="spacer-lg"></div>
+      </section>
     </main>
 
     <script src="/static/script.js"></script>
@@ -148,19 +222,28 @@
     <script>
       qs("#navbar").innerHTML = renderNavbar("");
 
+      const FSO_LOGIN_KEY = "fsoLoggedIn";
+      const FSO_ID_KEY = "fsoId";
+      const FSO_PHONE_KEY = "fsoPhone";
+
       let restaurants = [];
       let allComplaints = [];
       let activeFilter = "all";
-      let activeJuris = "";
+      let unsubLive = null;
 
-      /* ---------- Helpers ---------- */
-      function formatDate(c) {
-        const d = c.createdAt && c.createdAt.toDate
-          ? c.createdAt.toDate()
-          : new Date(c.createdAt || Date.now());
-        return d.toISOString().slice(0, 10);
+      /* ========== Helpers ========== */
+      function complaintDate(c) {
+        if (c.createdAt && c.createdAt.toDate) return c.createdAt.toDate();
+        return new Date(c.createdAt || Date.now());
       }
-
+      function dateString(c) {
+        return complaintDate(c).toISOString().slice(0, 10);
+      }
+      function statusEmoji(s) {
+        if (s === "Action Taken") return "✅";
+        if (s === "Under Review") return "🔎";
+        return "⏱";
+      }
       function chipFor(c) {
         const s = c.status || "Submitted";
         const cls = {
@@ -169,8 +252,11 @@
           "Under Review": "chip review",
           "Action Taken": "chip action",
         }[s] || "chip";
-        const emo = s === "Action Taken" ? "✅" : s === "Under Review" ? "🔎" : "⏱";
-        return `<span class="${cls}">${emo} ${s}</span>`;
+        return `<span class="${cls}">${statusEmoji(s)} ${s}</span>`;
+      }
+      function isNew(c) {
+        const s = c.status || "Submitted";
+        return s === "Submitted" || s === "Pending";
       }
 
       function photosBlock(c) {
@@ -229,28 +315,13 @@
 
       function timelineStack(c) {
         const items = [];
-        items.push(`<div><span class="muted-label">Submitted</span>${formatDate(c)}</div>`);
-        if (c.fboReviewed) {
-          items.push(`<div><span class="muted-label">FBO Review</span>${c.fboReviewed}</div>`);
-        }
-        if (c.improvementUpdate) {
-          items.push(`<div><span class="muted-label">Improvement</span>${c.improvementUpdate}</div>`);
-        }
-        if (c.FSOAction) {
-          items.push(`<div><span class="muted-label">FSO Action</span>${c.FSOAction}</div>`);
-        }
-        if (c.inspectionNote) {
-          items.push(`<div><span class="muted-label">Inspection</span>${c.inspectionNote}</div>`);
-        }
-        if (c.warningNote) {
-          items.push(`<div><span class="muted-label">Warning</span>${c.warningNote}</div>`);
-        }
-        if (c.officialNote) {
-          items.push(`<div><span class="muted-label">Official Note</span>${c.officialNote}</div>`);
-        }
-        if (c.escalationNote) {
-          items.push(`<div><span class="muted-label">Escalation</span>${c.escalationNote}</div>`);
-        }
+        items.push(`<div><span class="muted-label">Submitted</span>${dateString(c)}</div>`);
+        if (c.fboReviewed) items.push(`<div><span class="muted-label">FBO Review</span>${c.fboReviewed}</div>`);
+        if (c.improvementUpdate) items.push(`<div><span class="muted-label">Improvement</span>${c.improvementUpdate}</div>`);
+        if (c.FSOAction) items.push(`<div><span class="muted-label">FSO Action</span>${c.FSOAction}</div>`);
+        if (c.inspectionNote) items.push(`<div><span class="muted-label">Inspection</span>${c.inspectionNote}</div>`);
+        if (c.warningNote) items.push(`<div><span class="muted-label">Warning</span>${c.warningNote}</div>`);
+        if (c.officialNote) items.push(`<div><span class="muted-label">Official Note</span>${c.officialNote}</div>`);
         return `<div class="meta-stack">${items.join("")}</div>`;
       }
 
@@ -262,11 +333,51 @@
         return '<span class="icon-circle amber lg">📥</span>';
       }
 
+      function flaggedBanner(c) {
+        if (!c.flaggedByFBO) return "";
+        return `
+          <div class="flagged-banner">
+            <span>🚨</span> FLAGGED BY FBO
+            ${c.flagReason ? `<span class="reason">— "${c.flagReason}"</span>` : ""}
+          </div>`;
+      }
+
       function complaintCard(c) {
+        const positive = (Number(c.overallRating) || 0) >= 3;
         const isResolved = c.status === "Action Taken";
         const phoneDigits = String(c.consumerPhone || "").replace(/[^\d+]/g, "");
+
+        const actions = isResolved
+          ? `<div class="notice sage" style="margin-top: 10px">
+               <span>✅</span> Resolved.${c.officialNote ? ` Note: "${c.officialNote}"` : ""}
+             </div>`
+          : positive
+          ? `<div class="notice navy" style="margin-top: 10px">
+               <span>👍</span> Positive feedback — review only, no action required.
+             </div>`
+          : `
+            <div class="flex flex-wrap" style="gap: 8px; margin-top: 12px">
+              <button class="btn small" data-act="inspection">
+                <span>🔎</span> Assign Inspection
+              </button>
+              <button class="btn small navy" data-act="warning">
+                <span>📣</span> Send Warning
+              </button>
+              <button class="btn small secondary" data-act="contactFbo">
+                <span>🏢</span> Contact FBO
+              </button>
+              <button class="btn small secondary" data-act="contactConsumer">
+                <span>📞</span> Contact Consumer
+              </button>
+              <button class="btn small sage" data-act="resolve">
+                <span>✅</span> Mark Resolved
+              </button>
+            </div>
+            <div class="action-slot"></div>`;
+
         return `
           <div class="card" data-id="${c.complaintId || ""}">
+            ${flaggedBanner(c)}
             <div class="card-row">
               <div class="flex" style="align-items: flex-start; gap: 14px">
                 ${headIcon(c)}
@@ -275,7 +386,7 @@
                   <div class="meta"><span>🛡</span> FSSAI: ${c.restaurantLicense || "—"}</div>
                   <div class="meta" style="margin-top: 4px"><span>📄</span> ${c.complaintId || "—"}</div>
                   <div class="meta" style="margin-top: 4px"><span>📍</span> ${c.restaurantLocation || "—"}</div>
-                  <div class="meta" style="margin-top: 4px"><span>⏱</span> Filed: ${formatDate(c)}</div>
+                  <div class="meta" style="margin-top: 4px"><span>⏱</span> Filed: ${dateString(c)}</div>
                 </div>
               </div>
               <div style="text-align: right">
@@ -283,17 +394,10 @@
                   <span>⭐</span> ${Number(c.overallRating || 0).toFixed(1)} / 5
                 </span>
                 <div style="margin-top: 8px">${chipFor(c)}</div>
-                ${c.flaggedByFBO
-                  ? '<div style="margin-top: 6px"><span class="pill amber">🚨 Flagged by FBO</span></div>'
-                  : ""}
-                ${c.escalated
-                  ? '<div style="margin-top: 6px"><span class="pill amber">🔥 Escalated</span></div>'
-                  : ""}
               </div>
             </div>
 
             ${c.comment ? `<p style="margin: 12px 0 4px">${c.comment}</p>` : ""}
-
             ${ratingBreakdown(c)}
 
             <h4 class="section-heading" style="margin: 14px 0 4px; font-size: 14px">
@@ -302,7 +406,6 @@
             ${photosBlock(c)}
 
             <hr class="divider-dashed" />
-
             <div class="kv-grid" style="margin-top: 6px">
               <div class="kv">
                 <span class="icon-circle">👤</span>
@@ -330,79 +433,38 @@
             </div>
 
             ${timelineStack(c)}
-
-            ${isResolved
-              ? `<div class="notice sage" style="margin-top: 10px">
-                   <span>✅</span> Complaint resolved.${c.officialNote ? " Note: \"" + c.officialNote + "\"" : ""}
-                 </div>`
-              : `
-              <div class="flex flex-wrap" style="gap: 8px; margin-top: 12px">
-                <button class="btn small" data-act="inspection">
-                  <span>🔎</span> Assign Inspection
-                </button>
-                <button class="btn small secondary" data-act="contactConsumer">
-                  <span>📞</span> Contact Consumer
-                </button>
-                <button class="btn small secondary" data-act="contactFbo">
-                  <span>🏢</span> Contact FBO
-                </button>
-                <button class="btn small danger" data-act="escalate">
-                  <span>🔥</span> Escalate
-                </button>
-                <button class="btn small navy" data-act="warning">
-                  <span>📣</span> Send Warning
-                </button>
-                <button class="btn small secondary" data-act="askImprovement">
-                  <span>📝</span> Ask for Update
-                </button>
-                <button class="btn small sage" data-act="resolve">
-                  <span>✅</span> Mark Resolved
-                </button>
-                <button class="btn small secondary" data-act="close">
-                  <span>🗂</span> Close
-                </button>
-                <button class="btn small secondary" data-act="note">
-                  <span>📋</span> Add Official Note
-                </button>
-              </div>
-              <div class="action-slot"></div>`
-            }
+            ${actions}
           </div>`;
       }
 
-      /* ---------- Filtering & stats ---------- */
-      function withinJurisdiction(c) {
-        if (!activeJuris) return true;
-        const loc = (c.restaurantLocation || "").toLowerCase();
-        return loc.includes(activeJuris.toLowerCase());
-      }
-
+      /* ========== Filtering & stats ========== */
       function applyFilter(list) {
         if (activeFilter === "all") return list;
-        if (activeFilter === "flagged") return list.filter((c) => c.flaggedByFBO);
-        if (activeFilter === "escalated") return list.filter((c) => c.escalated);
-        return list.filter((c) => (c.status || "Submitted") === activeFilter);
+        if (activeFilter === "new") return list.filter(isNew);
+        if (activeFilter === "review")
+          return list.filter((c) => c.status === "Under Review");
+        if (activeFilter === "resolved")
+          return list.filter((c) => c.status === "Action Taken");
+        return list;
       }
 
       function updateStats() {
-        const list = allComplaints.filter(withinJurisdiction);
-        qs("#fsoTotal").textContent = list.length;
-        qs("#fsoPending").textContent = list.filter(
-          (c) => (c.status || "Submitted") === "Submitted" || c.status === "Pending"
-        ).length;
-        qs("#fsoReview").textContent = list.filter(
+        qs("#fsoTotal").textContent = allComplaints.length;
+        qs("#fsoNew").textContent = allComplaints.filter(isNew).length;
+        qs("#fsoReview").textContent = allComplaints.filter(
           (c) => c.status === "Under Review"
         ).length;
-        qs("#fsoFlagged").textContent = list.filter((c) => c.flaggedByFBO).length;
-        qs("#fsoResolved").textContent = list.filter(
+        qs("#fsoResolved").textContent = allComplaints.filter(
           (c) => c.status === "Action Taken"
+        ).length;
+        qs("#fsoFlagged").textContent = allComplaints.filter(
+          (c) => c.flaggedByFBO
         ).length;
       }
 
       function renderComplaints() {
         const listEl = qs("#complaintsList");
-        const scoped = allComplaints.filter(withinJurisdiction);
-        const filtered = applyFilter(scoped);
+        const filtered = applyFilter(allComplaints);
         if (!filtered.length) {
           listEl.innerHTML =
             '<div class="card"><p class="muted">No complaints for this filter.</p></div>';
@@ -411,13 +473,25 @@
         listEl.innerHTML = filtered.map(complaintCard).join("");
       }
 
-      /* ---------- FBO Database tab ---------- */
+      /* ========== FBO Database tab ========== */
       function complaintsForLicense(lic) {
         return allComplaints.filter((c) => c.restaurantLicense === lic);
       }
 
       function renderFboDatabase() {
-        const rows = restaurants.map((r) => {
+        const search = (qs("#fboSearch")?.value || "").trim().toLowerCase();
+        const area = qs("#fboArea")?.value || "";
+        const filtered = restaurants.filter((r) => {
+          const matchesQuery =
+            !search ||
+            (r.name || "").toLowerCase().includes(search) ||
+            (r.license || "").toLowerCase().includes(search);
+          const areaField = (r.area || r.location || "").toLowerCase();
+          const matchesArea = !area || areaField.includes(area.toLowerCase());
+          return matchesQuery && matchesArea;
+        });
+
+        const rows = filtered.map((r) => {
           const list = complaintsForLicense(r.license);
           const flaggedCount = list.filter((c) => c.flaggedByFBO).length;
           const sev =
@@ -432,7 +506,11 @@
               <td><span class="flex" style="gap: 6px">🏢 ${r.name}</span></td>
               <td><span class="flex" style="gap: 6px">📍 ${r.location || "—"}</span></td>
               <td>${sev}</td>
-              <td>${flaggedCount ? `<span class="pill amber">🚨 ${flaggedCount}</span>` : '<span class="muted">—</span>'}</td>
+              <td>${
+                flaggedCount
+                  ? `<span class="pill amber">🚨 ${flaggedCount}</span>`
+                  : '<span class="muted">—</span>'
+              }</td>
               <td>
                 <button class="btn small secondary" data-license="${r.license}">
                   <span>👁</span> View
@@ -440,8 +518,10 @@
               </td>
             </tr>`;
         });
-        qs("#fboTable").innerHTML = rows.join("");
-        qs("#fboCount").innerHTML = `🔲 ${restaurants.length} businesses`;
+
+        qs("#fboTable").innerHTML = rows.join("") ||
+          '<tr><td colspan="6" class="muted" style="padding: 14px">No restaurants match your search.</td></tr>';
+        qs("#fboCount").innerHTML = `🔲 ${filtered.length} of ${restaurants.length}`;
       }
 
       qs("#fboTable").addEventListener("click", (e) => {
@@ -463,7 +543,7 @@
         qs("#fboDetail").classList.add("hidden");
       });
 
-      /* ---------- Tabs & filters ---------- */
+      /* ========== Tabs + filters ========== */
       qsa(".tabs .tab").forEach((t) => {
         t.addEventListener("click", () => {
           qsa(".tabs .tab").forEach((x) => x.classList.remove("active"));
@@ -484,45 +564,32 @@
         });
       });
 
-      qs("#jurisSelect").addEventListener("change", () => {
-        activeJuris = qs("#jurisSelect").value;
-        const badge = qs("#jurisBadge");
-        if (activeJuris) {
-          badge.textContent = activeJuris;
-          badge.classList.remove("hidden");
-        } else {
-          badge.classList.add("hidden");
-        }
-        updateStats();
-        renderComplaints();
+      ["input", "change"].forEach((ev) => {
+        qs("#fboSearch").addEventListener(ev, renderFboDatabase);
+        qs("#fboArea").addEventListener(ev, renderFboDatabase);
       });
 
-      /* ---------- Action handling (FSO) ---------- */
+      /* ========== Action handling (FSO) ========== */
       const ACTIONS = {
         inspection: { title: "Assign inspection", fn: "assignInspection", cta: "Assign", ph: "Inspection instructions…" },
         warning:    { title: "Send warning to FBO", fn: "sendWarning", cta: "Send Warning", ph: "Warning details…" },
-        escalate:   { title: "Escalate case", fn: "escalate", cta: "Escalate", ph: "Why is this escalated?" },
-        resolve:    { title: "Mark resolved", fn: "markResolved", cta: "Resolve", ph: "Resolution note…" },
-        close:      { title: "Close complaint", fn: "closeComplaint", cta: "Close", ph: "Closing note…" },
-        note:       { title: "Add official note", fn: "addOfficialNote", cta: "Save Note", ph: "Official note…" },
-        askImprovement: { title: "Ask FBO for update", fn: "askImprovementUpdate", cta: "Send Request", ph: "", noNote: true },
+        resolve:    { title: "Mark resolved", fn: "markResolved", cta: "Resolve", ph: "Resolution note (will be made public)…" },
         contactConsumer: { title: "Contact consumer", fn: "contactConsumer", cta: "Log Contact", ph: "", noNote: true },
         contactFbo: { title: "Contact FBO", fn: "contactFbo", cta: "Log Contact", ph: "", noNote: true },
       };
 
       async function onComplaintsClick(e) {
-        const actBtn = e.target.closest("[data-act]");
         const card = e.target.closest(".card");
         if (!card) return;
         const id = card.dataset.id;
         if (!id) return;
 
+        const actBtn = e.target.closest("[data-act]");
         if (actBtn) {
           const action = ACTIONS[actBtn.dataset.act];
           if (!action) return;
           const slot = card.querySelector(".action-slot");
 
-          // Special: contactConsumer / contactFbo — quick actions with optional tel: link
           if (actBtn.dataset.act === "contactConsumer") {
             const c = allComplaints.find((x) => x.complaintId === id);
             if (c && c.consumerPhone) {
@@ -536,10 +603,6 @@
             await window.Portal.fso[action.fn](id);
             const c = allComplaints.find((x) => x.complaintId === id);
             if (c) {
-              if (action.fn === "askImprovementUpdate") {
-                c.FSOAction = "Improvement Requested";
-                c.status = "Under Review";
-              }
               if (action.fn === "contactConsumer") c.FSOAction = "Consumer Contacted";
               if (action.fn === "contactFbo") c.FSOAction = "FBO Contacted";
             }
@@ -562,12 +625,10 @@
 
         const subBtn = e.target.closest("[data-sub]");
         if (!subBtn) return;
-
         if (subBtn.dataset.sub === "cancel") {
           card.querySelector(".action-slot").innerHTML = "";
           return;
         }
-
         const action = ACTIONS[subBtn.dataset.sub];
         if (!action) return;
         const note = (card.querySelector(".note-input")?.value || "").trim();
@@ -583,21 +644,9 @@
           } else if (action.fn === "sendWarning") {
             c.FSOAction = "Warning Issued";
             c.warningNote = note;
-          } else if (action.fn === "escalate") {
-            c.escalated = true;
-            c.escalationNote = note;
-            c.FSOAction = "Escalated";
-            c.status = "Under Review";
           } else if (action.fn === "markResolved") {
             c.status = "Action Taken";
             c.FSOAction = "Resolved";
-            c.officialNote = note;
-          } else if (action.fn === "closeComplaint") {
-            c.closed = true;
-            c.status = "Action Taken";
-            c.FSOAction = "Closed";
-            c.officialNote = note;
-          } else if (action.fn === "addOfficialNote") {
             c.officialNote = note;
           }
         }
@@ -608,8 +657,59 @@
       qs("#complaintsList").addEventListener("click", onComplaintsClick);
       qs("#fboDetailComplaints").addEventListener("click", onComplaintsClick);
 
-      /* ---------- Bootstrap ---------- */
-      let unsubLive = null;
+      /* ========== LOGIN ========== */
+      function showLoginErr(m) {
+        const el = qs("#fsoLoginErr");
+        el.innerHTML = "⚠ " + m; el.classList.remove("hidden");
+      }
+      function hideLoginErr() { qs("#fsoLoginErr").classList.add("hidden"); }
+      function showOtpErr(m) {
+        const el = qs("#fsoOtpErr");
+        el.innerHTML = "⚠ " + m; el.classList.remove("hidden");
+      }
+      function hideOtpErr() { qs("#fsoOtpErr").classList.add("hidden"); }
+
+      qs("#fsoSendOtp").addEventListener("click", () => {
+        hideLoginErr();
+        const fid = qs("#fsoId").value.trim();
+        const phone = qs("#fsoPhone").value.trim();
+        if (!fid) { showLoginErr("Please enter your FSO ID."); return; }
+        if (!/^\+?\d{10,13}$/.test(phone.replace(/\s|-/g, ""))) {
+          showLoginErr("Please enter a valid phone number."); return;
+        }
+        sessionStorage.setItem(FSO_ID_KEY, fid);
+        sessionStorage.setItem(FSO_PHONE_KEY, phone);
+        qs("#fsoOtpPhone").textContent = phone;
+        qs("#loginStep").classList.add("hidden");
+        qs("#otpStep").classList.remove("hidden");
+      });
+
+      wireOtpBoxes("#fsoOtpBoxes");
+      qs("#fsoVerify").addEventListener("click", () => {
+        hideOtpErr();
+        const code = getOtpValue("#fsoOtpBoxes");
+        if (code.length !== 6) {
+          showOtpErr("Please enter all 6 digits.");
+          return;
+        }
+        // Dummy verification
+        sessionStorage.setItem(FSO_LOGIN_KEY, "1");
+        enterDashboard();
+      });
+
+      qs("#fsoLoginBack").addEventListener("click", (e) => {
+        e.preventDefault();
+        qs("#otpStep").classList.add("hidden");
+        qs("#loginStep").classList.remove("hidden");
+      });
+
+      qs("#fsoSignOut").addEventListener("click", () => {
+        if (unsubLive) { try { unsubLive(); } catch (_) {} unsubLive = null; }
+        sessionStorage.removeItem(FSO_LOGIN_KEY);
+        sessionStorage.removeItem(FSO_ID_KEY);
+        sessionStorage.removeItem(FSO_PHONE_KEY);
+        location.reload();
+      });
 
       function refreshAll() {
         updateStats();
@@ -617,6 +717,28 @@
         renderFboDatabase();
       }
 
+      function enterDashboard() {
+        qs("#otpStep").classList.add("hidden");
+        qs("#loginStep").classList.add("hidden");
+        qs("#dashboardStep").classList.remove("hidden");
+        const fid = sessionStorage.getItem(FSO_ID_KEY) || "FSO-MEG-0042";
+        const phone = sessionStorage.getItem(FSO_PHONE_KEY) || "";
+        qs("#fsoBadge").innerHTML = `🪪 ${fid}${phone ? " · 📞 " + phone : ""}`;
+
+        if (window.Portal && window.Portal.subscribeAllComplaints) {
+          unsubLive = window.Portal.subscribeAllComplaints((list) => {
+            allComplaints = Array.isArray(list) ? list : [];
+            refreshAll();
+          });
+        } else if (window.Portal && window.Portal.fetchAllComplaints) {
+          window.Portal.fetchAllComplaints().then((list) => {
+            allComplaints = Array.isArray(list) ? list : [];
+            refreshAll();
+          });
+        }
+      }
+
+      /* ========== Bootstrap ========== */
       async function boot() {
         if (window.Portal && window.Portal.fetchRestaurants) {
           const r = await window.Portal.fetchRestaurants();
@@ -625,8 +747,8 @@
           restaurants = MOCK_RESTAURANTS;
         }
 
-        // Populate jurisdiction dropdown from SHILLONG_AREAS
-        const sel = qs("#jurisSelect");
+        // Populate area filter
+        const sel = qs("#fboArea");
         if (typeof SHILLONG_AREAS !== "undefined") {
           SHILLONG_AREAS.forEach((a) => {
             const o = document.createElement("option");
@@ -636,18 +758,9 @@
           });
         }
 
-        // Live subscription so newly filed / updated complaints stream in
-        if (window.Portal && window.Portal.subscribeAllComplaints) {
-          unsubLive = window.Portal.subscribeAllComplaints((list) => {
-            allComplaints = Array.isArray(list) ? list : [];
-            refreshAll();
-          });
-        } else if (window.Portal && window.Portal.fetchAllComplaints) {
-          const list = await window.Portal.fetchAllComplaints();
-          allComplaints = Array.isArray(list) ? list : [];
-          refreshAll();
-        } else {
-          refreshAll();
+        // Auto-restore login session
+        if (sessionStorage.getItem(FSO_LOGIN_KEY)) {
+          enterDashboard();
         }
       }
 
