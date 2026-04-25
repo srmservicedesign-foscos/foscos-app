@@ -86,7 +86,15 @@ const SHILLONG_AREAS = [
   "Bara Bazar",
 ];
 
-/* ---------- Mock data (fallback when Firestore not configured) ---------- */
+/* ---------- Mock data (fallback when Firestore not configured) ----------
+ * Each restaurant carries 5+ public comments with mixed status. Only
+ * { status: "approved" } items are shown publicly on the consumer side
+ * (the home detail view filters on this). Other statuses ("pending",
+ * "under_review", "flagged") flow through the FBO + FSO dashboards. */
+function _c(text, type, status) {
+  return { text, type, status };
+}
+
 const MOCK_RESTAURANTS = [
   {
     id: "R001",
@@ -97,8 +105,13 @@ const MOCK_RESTAURANTS = [
     rating: 4.4,
     cuisine: "Continental · Khasi",
     comments: [
-      { text: "Cozy place, clean kitchen.", type: "good", status: "approved" },
-      { text: "Long wait on Sunday afternoons.", type: "bad", status: "approved" },
+      _c("Cozy place, clean kitchen.", "good", "approved"),
+      _c("Long wait on Sunday afternoons.", "bad", "approved"),
+      _c("Loved the live music nights.", "good", "approved"),
+      _c("Once found a hair in the salad — was addressed.", "bad", "approved"),
+      _c("Friendly servers, gloves used.", "good", "approved"),
+      _c("Bill seemed inflated, FSO investigating.", "bad", "under_review"),
+      _c("Restroom needs attention.", "bad", "flagged"),
     ],
   },
   {
@@ -110,8 +123,12 @@ const MOCK_RESTAURANTS = [
     rating: 4.1,
     cuisine: "Khasi · Indian",
     comments: [
-      { text: "Authentic pork dishes.", type: "good", status: "approved" },
-      { text: "Service was slow.", type: "bad", status: "approved" },
+      _c("Authentic pork dishes.", "good", "approved"),
+      _c("Service was slow.", "bad", "approved"),
+      _c("Best dohjem in Shillong.", "good", "approved"),
+      _c("Floor was a bit sticky.", "bad", "approved"),
+      _c("Reasonably priced.", "good", "approved"),
+      _c("Found pet hair on chair, escalated.", "bad", "flagged"),
     ],
   },
   {
@@ -123,7 +140,12 @@ const MOCK_RESTAURANTS = [
     rating: 4.5,
     cuisine: "Cafe · Continental",
     comments: [
-      { text: "Loved the ambience.", type: "good", status: "approved" },
+      _c("Loved the ambience.", "good", "approved"),
+      _c("Great pancakes and coffee.", "good", "approved"),
+      _c("Tribute to Bob Dylan vibe.", "good", "approved"),
+      _c("Bill miscalculated once — quickly corrected.", "bad", "approved"),
+      _c("Vegan options are a plus.", "good", "approved"),
+      _c("Music too loud during dinner.", "bad", "under_review"),
     ],
   },
   {
@@ -135,7 +157,12 @@ const MOCK_RESTAURANTS = [
     rating: 4.2,
     cuisine: "Fusion",
     comments: [
-      { text: "Good coffee and sandwiches.", type: "good", status: "approved" },
+      _c("Good coffee and sandwiches.", "good", "approved"),
+      _c("Pet-friendly which is rare here.", "good", "approved"),
+      _c("Wi-Fi works perfectly.", "good", "approved"),
+      _c("Slow on Sundays.", "bad", "approved"),
+      _c("Tables wobble.", "bad", "approved"),
+      _c("Stale bread once, FBO acknowledged.", "bad", "under_review"),
     ],
   },
   {
@@ -147,8 +174,12 @@ const MOCK_RESTAURANTS = [
     rating: 3.4,
     cuisine: "North Indian · Dhaba",
     comments: [
-      { text: "Staff weren't wearing gloves.", type: "bad", status: "approved" },
-      { text: "Food tastes good.", type: "good", status: "approved" },
+      _c("Staff weren't wearing gloves.", "bad", "approved"),
+      _c("Food tastes good.", "good", "approved"),
+      _c("Late-night option — appreciated.", "good", "approved"),
+      _c("Counter was greasy.", "bad", "flagged"),
+      _c("Generous portions.", "good", "approved"),
+      _c("Spoiled chicken claim — FSO inspecting.", "bad", "under_review"),
     ],
   },
   {
@@ -160,7 +191,12 @@ const MOCK_RESTAURANTS = [
     rating: 4.0,
     cuisine: "Khasi",
     comments: [
-      { text: "Traditional taste, small place.", type: "good", status: "approved" },
+      _c("Traditional taste, small place.", "good", "approved"),
+      _c("Authentic jadoh and dohneiiong.", "good", "approved"),
+      _c("Hygiene could improve.", "bad", "approved"),
+      _c("Best value-for-money in Mawlai.", "good", "approved"),
+      _c("Plates not always rinsed properly.", "bad", "flagged"),
+      _c("Owner friendly and humble.", "good", "approved"),
     ],
   },
   {
@@ -172,7 +208,12 @@ const MOCK_RESTAURANTS = [
     rating: 4.3,
     cuisine: "Continental",
     comments: [
-      { text: "View is worth it.", type: "good", status: "approved" },
+      _c("View is worth it.", "good", "approved"),
+      _c("Sunset hours are magical.", "good", "approved"),
+      _c("Pricey but clean.", "good", "approved"),
+      _c("Drink was watered down once.", "bad", "approved"),
+      _c("Server was patient with kids.", "good", "approved"),
+      _c("Bill not itemised — followed up.", "bad", "under_review"),
     ],
   },
   {
@@ -184,10 +225,193 @@ const MOCK_RESTAURANTS = [
     rating: 4.1,
     cuisine: "Multi-cuisine",
     comments: [
-      { text: "Fresh salads, clean place.", type: "good", status: "approved" },
+      _c("Fresh salads, clean place.", "good", "approved"),
+      _c("Lovely view of the lake.", "good", "approved"),
+      _c("Slow service when crowded.", "bad", "approved"),
+      _c("Children's portions available.", "good", "approved"),
+      _c("Tap water was cloudy.", "bad", "flagged"),
+      _c("Rice came lukewarm.", "bad", "under_review"),
+    ],
+  },
+  {
+    id: "R009",
+    name: "Highland Cafe",
+    location: "Upper Shillong",
+    area: "Upper Shillong",
+    license: "10112345601910",
+    rating: 4.0,
+    cuisine: "Cafe · Bakery",
+    comments: [
+      _c("Pastries are fresh daily.", "good", "approved"),
+      _c("Cheerful staff.", "good", "approved"),
+      _c("Pricing slightly high.", "bad", "approved"),
+      _c("Clean restrooms.", "good", "approved"),
+      _c("Cake had foreign object — being investigated.", "bad", "flagged"),
+    ],
+  },
+  {
+    id: "R010",
+    name: "Cantonment Mess",
+    location: "Shillong Cantonment",
+    area: "Shillong Cantonment",
+    license: "10112345602011",
+    rating: 3.9,
+    cuisine: "Indian · Mess",
+    comments: [
+      _c("Hearty meals at fair prices.", "good", "approved"),
+      _c("Tables wiped between guests.", "good", "approved"),
+      _c("Curry was reheated.", "bad", "approved"),
+      _c("Plates have stains sometimes.", "bad", "flagged"),
+      _c("Reliable for groups.", "good", "approved"),
+    ],
+  },
+  {
+    id: "R011",
+    name: "Nong Bah Snacks",
+    location: "Nongthymmai, Shillong",
+    area: "Nongthymmai",
+    license: "10112345602212",
+    rating: 3.7,
+    cuisine: "Street food",
+    comments: [
+      _c("Tasty puri-sabji.", "good", "approved"),
+      _c("Hand wash facility provided.", "good", "approved"),
+      _c("Oil reused — concern raised.", "bad", "flagged"),
+      _c("Quick service.", "good", "approved"),
+      _c("Plates not always covered.", "bad", "under_review"),
+    ],
+  },
+  {
+    id: "R012",
+    name: "Heritage Diner",
+    location: "Police Bazar, Shillong",
+    area: "Police Bazar",
+    license: "10112345602413",
+    rating: 4.2,
+    cuisine: "Continental · Bakery",
+    comments: [
+      _c("Polite hosts and freshly baked bread.", "good", "approved"),
+      _c("Heritage decor adds charm.", "good", "approved"),
+      _c("AC not strong on hot days.", "bad", "approved"),
+      _c("Allergens clearly labelled.", "good", "approved"),
+      _c("Soup was lukewarm — corrected.", "bad", "approved"),
     ],
   },
 ];
+
+/* ---------- Demo complaint seeder (non-destructive) ----------
+ * Pre-populates session storage with a varied set of complaints across
+ * the mock restaurants — used only when Firestore returns empty so the
+ * jury demo always has data to look at on FBO + FSO + consumer sides. */
+function seedMockComplaints() {
+  const KEY = "cgpComplaints";
+  const SEEDED = "cgpComplaintsSeeded";
+  if (sessionStorage.getItem(SEEDED)) return;
+  const existing = JSON.parse(sessionStorage.getItem(KEY) || "[]");
+  if (existing.length >= 12) {
+    sessionStorage.setItem(SEEDED, "1");
+    return;
+  }
+
+  const PHONES = ["+919876500001", "+919876500002", "+919876500003", "+919876500004"];
+  const NAMES = ["Lapyngshai N.", "Damanbha S.", "Iaihun K.", "Riti B.", "Kyrshan M."];
+  const STATUSES = ["Submitted", "Under Review", "Action Taken", "Submitted"];
+  const SAMPLES_BAD = [
+    "Stale vegetables in the salad.",
+    "Floor near kitchen was dirty.",
+    "Staff didn't wear gloves while serving.",
+    "Found a strand of hair in the dish.",
+    "Bill not itemised, suspect overcharge.",
+    "Cockroach near the wash area.",
+    "Soup tasted off — possibly spoilt.",
+    "Storage room visible — unclean.",
+  ];
+  const SAMPLES_GOOD = [
+    "Hygiene was excellent today, kudos.",
+    "Polite staff and clean restrooms.",
+    "Loved the freshly prepared meal.",
+    "Best service I've had in weeks.",
+    "Allergens noted on the menu.",
+  ];
+
+  const seeded = [];
+  let counter = 1001;
+  function makeComplaintId() {
+    counter += 1;
+    return `GRV-2026-${String(counter).padStart(5, "0")}`;
+  }
+  function daysAgoIso(d) {
+    const t = new Date();
+    t.setDate(t.getDate() - d);
+    return t.toISOString();
+  }
+
+  MOCK_RESTAURANTS.forEach((r, idx) => {
+    const count = 11 + (idx % 3); // 11–13 per restaurant
+    for (let i = 0; i < count; i++) {
+      const isPositive = Math.random() < 0.45;
+      const baseRating = isPositive
+        ? 4 + Math.random()
+        : 1 + Math.random() * 2.4;
+      const overall = Math.round(baseRating * 10) / 10;
+      const ratings = isPositive
+        ? [
+            4 + Math.floor(Math.random() * 2),
+            4 + Math.floor(Math.random() * 2),
+            4 + Math.floor(Math.random() * 2),
+          ]
+        : [
+            1 + Math.floor(Math.random() * 3),
+            1 + Math.floor(Math.random() * 3),
+            1 + Math.floor(Math.random() * 3),
+          ];
+      // Spread dates so the date filters (today / 2d / 7d / 30d) all show data
+      const offset = i === 0 ? 0 : i === 1 ? 1 : Math.floor(Math.random() * 35);
+      const status = STATUSES[i % STATUSES.length];
+      const flagged = !isPositive && Math.random() < 0.18;
+      const c = {
+        complaintId: makeComplaintId(),
+        restaurantId: r.id,
+        restaurantName: r.name,
+        restaurantLicense: r.license,
+        restaurantLocation: r.location,
+        rating_cleanliness: ratings[0],
+        rating_food_freshness: ratings[1],
+        rating_staff_hygiene: ratings[2],
+        overallRating: overall,
+        comment: isPositive
+          ? SAMPLES_GOOD[Math.floor(Math.random() * SAMPLES_GOOD.length)]
+          : SAMPLES_BAD[Math.floor(Math.random() * SAMPLES_BAD.length)],
+        evidencePhoto: "",
+        billPhoto: "",
+        consumerName: NAMES[(idx + i) % NAMES.length],
+        consumerPhone: PHONES[(idx + i) % PHONES.length],
+        status: isPositive ? "Action Taken" : status,
+        createdAt: daysAgoIso(offset),
+        assignedFSO: "Mr. Banshan Lyngdoh",
+        flaggedByFBO: flagged,
+        improvementUpdate:
+          status === "Under Review"
+            ? "FBO acknowledged and is acting on the issue."
+            : "",
+        FSOAction:
+          status === "Action Taken"
+            ? "Resolved"
+            : flagged
+            ? "Inspection Assigned"
+            : "",
+      };
+      seeded.push(c);
+    }
+  });
+
+  // Newest first
+  seeded.sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1));
+  sessionStorage.setItem(KEY, JSON.stringify([...existing, ...seeded]));
+  sessionStorage.setItem(SEEDED, "1");
+}
+// auto-seed for demo
+try { seedMockComplaints(); } catch (_) {}
 
 const MOCK_COMPLAINTS = [
   {

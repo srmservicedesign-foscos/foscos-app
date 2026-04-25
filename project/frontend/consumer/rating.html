@@ -525,7 +525,7 @@
         btn.textContent = "Verifying…";
 
         try {
-          if (window.Portal && window.Portal.isAuthReady) {
+          if (window.Portal && window.Portal.verifyOtp) {
             await window.Portal.verifyOtp(code);
           }
         } catch (e) {
@@ -559,9 +559,23 @@
         let complaintId = "";
         let savedRemotely = false;
         if (window.Portal && window.Portal.submitComplaint) {
-          const res = await window.Portal.submitComplaint(payload);
-          complaintId = res.complaintId;
-          savedRemotely = res.savedRemotely;
+          try {
+            const res = await window.Portal.submitComplaint(payload);
+            complaintId = res.complaintId;
+            savedRemotely = res.savedRemotely;
+          } catch (saveErr) {
+            // Real Firestore failure (rules, network, etc) — keep the OTP
+            // step visible and tell the user exactly what went wrong.
+            qs("#doneStep").classList.add("hidden");
+            qs("#otpStep").classList.remove("hidden");
+            showOtpError(
+              (saveErr && saveErr.message) ||
+                "Could not save complaint to Firestore. Please try again."
+            );
+            btn.disabled = false;
+            btn.textContent = "Verify OTP & Submit";
+            return;
+          }
         } else {
           complaintId = "GRV-" + new Date().getFullYear() + "-" +
             Math.floor(10000 + Math.random() * 90000);

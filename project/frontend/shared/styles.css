@@ -1508,6 +1508,135 @@ a:hover {
   flex: 1;
 }
 
+/* ---------- Login screens (FBO + FSO) ---------- */
+.login-card {
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+.login-card h3 {
+  margin-bottom: 4px;
+}
+
+.login-card .login-step {
+  margin-top: 10px;
+}
+
+/* Autocomplete suggestion box */
+.autocomplete-wrap {
+  position: relative;
+}
+
+.autocomplete-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 30;
+  background: var(--white);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+  max-height: 220px;
+  overflow: auto;
+  padding: 4px;
+}
+
+.autocomplete-list .ac-item {
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+}
+
+.autocomplete-list .ac-item:hover,
+.autocomplete-list .ac-item.active {
+  background: var(--cream);
+}
+
+.autocomplete-list .ac-item .ac-sub {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.autocomplete-list .ac-empty {
+  padding: 8px 10px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+/* ---------- "Flagged by FBO" inline banner (FSO complaint card) ---------- */
+.flagged-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fce8e6;
+  border: 1px solid #e5a7a0;
+  border-left: 4px solid var(--danger);
+  color: var(--danger);
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  margin-top: 10px;
+  text-transform: uppercase;
+}
+
+.flagged-banner .reason {
+  font-weight: 500;
+  text-transform: none;
+  color: #6c2222;
+  letter-spacing: 0;
+}
+
+/* ---------- Date filter row (FBO dashboard secondary tabs) ---------- */
+.date-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  padding: 6px 10px;
+  background: var(--cream);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  width: max-content;
+  max-width: 100%;
+}
+
+.date-row .date-label {
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.date-row .date-chip {
+  background: var(--white);
+  border: 1px solid var(--border-strong);
+  color: var(--navy);
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.date-row .date-chip:hover {
+  background: var(--navy-soft);
+}
+
+.date-row .date-chip.active {
+  background: var(--navy);
+  color: var(--white);
+  border-color: var(--navy);
+}
+
 /* ---------- Demo / test mode notice ---------- */
 .demo-banner {
   display: inline-flex;

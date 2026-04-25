@@ -47,11 +47,13 @@ import {
   getDocs,
   getDoc,
   setDoc,
+  addDoc,
   updateDoc,
   doc,
   query,
   where,
   orderBy,
+  limit,
   serverTimestamp,
   onSnapshot,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -90,6 +92,7 @@ const firebaseConfig = {
  * Add or remove pairs as needed. Values are { phone (E.164): otp }.
  */
 const TEST_PHONES = {
+  "+919370337226": "123456",
   "+919876543210": "123456",
   "+911111111111": "123456",
   "+910000000000": "123456",
@@ -196,8 +199,14 @@ function normalizePhone(phone) {
 }
 
 /**
- * Persist a complaint to Firestore. Returns { complaintId, savedRemotely }.
- * Falls back to sessionStorage when Firestore isn't configured so demos work.
+ * Persist a complaint to Firestore via addDoc(). The doc id is auto-generated;
+ * the human-friendly complaintId is stored as a field so all read/update
+ * paths use a where("complaintId", "==", id) query.
+ *
+ * Returns { complaintId, docId, savedRemotely }. When Firestore isn't
+ * configured, mirrors into sessionStorage so demos work. When Firestore
+ * write fails (e.g. rules block it), the error is THROWN so callers can
+ * surface it clearly — no silent fallback.
  */
 async function submitComplaint(data) {
   const complaintId = data.complaintId || generateComplaintId();
@@ -221,41 +230,72 @@ async function submitComplaint(data) {
     flaggedByFBO: false,
   };
 
-  if (!db) {
+  // Mirror into local store so the consumer dashboard always shows their
+  // submission immediately — independent of Firestore reachability.
+  function mirrorLocal(extra = {}) {
     const local = JSON.parse(sessionStorage.getItem("cgpComplaints") || "[]");
-    local.unshift({ ...record, createdAt: new Date().toISOString() });
+    local.unshift({
+      ...record,
+      ...extra,
+      createdAt: extra.createdAt || new Date().toISOString(),
+    });
     sessionStorage.setItem("cgpComplaints", JSON.stringify(local));
+  }
+
+  if (!db) {
+    mirrorLocal();
+    console.warn(
+      "[Consumer Grievance Portal] Firestore not configured — complaint kept in session storage only:",
+      complaintId
+    );
     return { complaintId, savedRemotely: false };
   }
 
   try {
-    await setDoc(doc(db, "complaints", complaintId), {
+    const ref = await addDoc(collection(db, "complaints"), {
       ...record,
       createdAt: serverTimestamp(),
     });
+    mirrorLocal({ docId: ref.id });
     console.info(
-      `[Consumer Grievance Portal] Complaint saved to Firestore: ${complaintId}`
+      `%c[Consumer Grievance Portal] ✔ Complaint saved to Firestore`,
+      "color:#2e7d5b;font-weight:600",
+      { complaintId, docId: ref.id }
     );
-    return { complaintId, savedRemotely: true };
+    return { complaintId, docId: ref.id, savedRemotely: true };
   } catch (e) {
     console.error(
-      "[Consumer Grievance Portal] Firestore complaint save failed:",
+      "[Consumer Grievance Portal] ✖ Firestore complaint save FAILED:",
       e
     );
-    const local = JSON.parse(sessionStorage.getItem("cgpComplaints") || "[]");
-    local.unshift({ ...record, createdAt: new Date().toISOString() });
-    sessionStorage.setItem("cgpComplaints", JSON.stringify(local));
-    return { complaintId, savedRemotely: false, error: e };
+    mirrorLocal();
+    // Throw a friendly error so the page shows it instead of pretending it saved.
+    const friendly = new Error(
+      e && e.code === "permission-denied"
+        ? "Firestore rules denied the write. In the Firebase console, allow create on the 'complaints' collection (see firebase.js header)."
+        : (e && e.message) || "Could not save the complaint to Firestore."
+    );
+    friendly.code = e && e.code;
+    friendly.original = e;
+    throw friendly;
   }
 }
 
 async function fetchComplaintById(complaintId) {
   if (!db || !complaintId) return null;
   try {
-    const ref = doc(db, "complaints", complaintId);
-    const snap = await getDoc(ref);
-    if (!snap.exists()) return null;
-    return { ...snap.data() };
+    // Stored either at /complaints/<auto-id> with `complaintId` field
+    // (current schema) or at /complaints/<complaintId> (legacy rows).
+    const direct = await getDoc(doc(db, "complaints", complaintId));
+    if (direct.exists()) return direct.data();
+    const q = query(
+      collection(db, "complaints"),
+      where("complaintId", "==", complaintId),
+      limit(1)
+    );
+    const snap = await getDocs(q);
+    if (snap.empty) return null;
+    return snap.docs[0].data();
   } catch (e) {
     console.warn("[Consumer Grievance Portal] fetchComplaintById failed:", e);
     return null;
@@ -357,8 +397,21 @@ async function updateComplaint(complaintId, updates) {
     return { ok: false, reason: "not-found" };
   }
   try {
-    const ref = doc(db, "complaints", complaintId);
-    await updateDoc(ref, {
+    // Try the legacy direct path first; if missing, query by complaintId.
+    const direct = doc(db, "complaints", complaintId);
+    const directSnap = await getDoc(direct);
+    if (directSnap.exists()) {
+      await updateDoc(direct, { ...updates, updatedAt: serverTimestamp() });
+      return { ok: true };
+    }
+    const q = query(
+      collection(db, "complaints"),
+      where("complaintId", "==", complaintId),
+      limit(1)
+    );
+    const snap = await getDocs(q);
+    if (snap.empty) return { ok: false, reason: "not-found" };
+    await updateDoc(snap.docs[0].ref, {
       ...updates,
       updatedAt: serverTimestamp(),
     });
@@ -384,10 +437,16 @@ function subscribeComplaintById(complaintId, cb) {
     cb(all.find((c) => c.complaintId === complaintId) || null);
     return () => {};
   }
-  const ref = doc(db, "complaints", complaintId);
+  // Subscribe via field query so it works whether the doc id is a Firestore
+  // auto-id (new addDoc rows) or the complaintId itself (legacy rows).
+  const q = query(
+    collection(db, "complaints"),
+    where("complaintId", "==", complaintId),
+    limit(1)
+  );
   return onSnapshot(
-    ref,
-    (snap) => cb(snap.exists() ? snap.data() : null),
+    q,
+    (snap) => cb(snap.empty ? null : snap.docs[0].data()),
     (err) => {
       console.warn("[Consumer Grievance Portal] subscribeComplaintById error:", err);
     }
