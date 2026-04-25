@@ -47,6 +47,7 @@ import {
   getDocs,
   getDoc,
   setDoc,
+  updateDoc,
   doc,
   query,
   where,
@@ -263,6 +264,161 @@ async function fetchComplaintsByPhone(phone) {
   }
 }
 
+/* -------------------- FBO / FSO dashboards -------------------- */
+function sortByCreatedAtDesc(list) {
+  list.sort((a, b) => {
+    const ta = a.createdAt && a.createdAt.toMillis ? a.createdAt.toMillis() : 0;
+    const tb = b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : 0;
+    return tb - ta;
+  });
+  return list;
+}
+
+function localComplaintsFallback(filterFn) {
+  const all = JSON.parse(sessionStorage.getItem("cgpComplaints") || "[]");
+  return filterFn ? all.filter(filterFn) : all;
+}
+
+async function fetchComplaintsForFbo({ license, restaurantId } = {}) {
+  if (!db) {
+    return localComplaintsFallback(
+      (c) =>
+        (license && c.restaurantLicense === license) ||
+        (restaurantId && c.restaurantId === restaurantId)
+    );
+  }
+  try {
+    let q;
+    if (license) {
+      q = query(
+        collection(db, "complaints"),
+        where("restaurantLicense", "==", license)
+      );
+    } else if (restaurantId) {
+      q = query(
+        collection(db, "complaints"),
+        where("restaurantId", "==", restaurantId)
+      );
+    } else {
+      return [];
+    }
+    const snap = await getDocs(q);
+    return sortByCreatedAtDesc(snap.docs.map((d) => d.data()));
+  } catch (e) {
+    console.error("[Consumer Grievance Portal] fetchComplaintsForFbo failed:", e);
+    return null;
+  }
+}
+
+async function fetchAllComplaints() {
+  if (!db) return localComplaintsFallback();
+  try {
+    const snap = await getDocs(collection(db, "complaints"));
+    return sortByCreatedAtDesc(snap.docs.map((d) => d.data()));
+  } catch (e) {
+    console.error("[Consumer Grievance Portal] fetchAllComplaints failed:", e);
+    return null;
+  }
+}
+
+async function updateComplaint(complaintId, updates) {
+  if (!db || !complaintId) {
+    // Update local mock store
+    const all = JSON.parse(sessionStorage.getItem("cgpComplaints") || "[]");
+    const idx = all.findIndex((c) => c.complaintId === complaintId);
+    if (idx >= 0) {
+      all[idx] = { ...all[idx], ...updates, updatedAt: new Date().toISOString() };
+      sessionStorage.setItem("cgpComplaints", JSON.stringify(all));
+      return { ok: true, mock: true };
+    }
+    return { ok: false, reason: "not-found" };
+  }
+  try {
+    const ref = doc(db, "complaints", complaintId);
+    await updateDoc(ref, {
+      ...updates,
+      updatedAt: serverTimestamp(),
+    });
+    return { ok: true };
+  } catch (e) {
+    console.error("[Consumer Grievance Portal] updateComplaint failed:", e);
+    return { ok: false, error: e };
+  }
+}
+
+/* ---- FBO action wrappers ---- */
+const fbo = {
+  sendThankYou: (id) =>
+    updateComplaint(id, { thankYouSent: true, fboReviewed: "positive" }),
+  markGenuine: (id) =>
+    updateComplaint(id, { fboReviewed: "genuine", status: "Under Review" }),
+  addImprovementUpdate: (id, note) =>
+    updateComplaint(id, {
+      improvementUpdate: note || "",
+      fboReviewed: "genuine",
+      status: "Under Review",
+    }),
+  markImprovementCompleted: (id, note) =>
+    updateComplaint(id, {
+      improvementUpdate: note || "Improvement completed by FBO.",
+      fboReviewed: "completed",
+      status: "Action Taken",
+    }),
+  flagComplaint: (id, reason) =>
+    updateComplaint(id, {
+      flaggedByFBO: true,
+      flagReason: reason || "",
+      fboReviewed: "flagged",
+      status: "Under Review",
+    }),
+};
+
+/* ---- FSO action wrappers ---- */
+const fso = {
+  assignInspection: (id, note) =>
+    updateComplaint(id, {
+      FSOAction: "Inspection Assigned",
+      inspectionNote: note || "",
+      status: "Under Review",
+    }),
+  contactConsumer: (id) =>
+    updateComplaint(id, { FSOAction: "Consumer Contacted" }),
+  contactFbo: (id) =>
+    updateComplaint(id, { FSOAction: "FBO Contacted" }),
+  escalate: (id, note) =>
+    updateComplaint(id, {
+      FSOAction: "Escalated",
+      escalationNote: note || "",
+      escalated: true,
+      status: "Under Review",
+    }),
+  sendWarning: (id, note) =>
+    updateComplaint(id, {
+      FSOAction: "Warning Issued",
+      warningNote: note || "",
+    }),
+  askImprovementUpdate: (id) =>
+    updateComplaint(id, {
+      FSOAction: "Improvement Requested",
+      status: "Under Review",
+    }),
+  markResolved: (id, note) =>
+    updateComplaint(id, {
+      FSOAction: "Resolved",
+      officialNote: note || "",
+      status: "Action Taken",
+    }),
+  closeComplaint: (id, note) =>
+    updateComplaint(id, {
+      FSOAction: "Closed",
+      officialNote: note || "",
+      closed: true,
+      status: "Action Taken",
+    }),
+  addOfficialNote: (id, note) =>
+    updateComplaint(id, { officialNote: note || "" }),
+};
+
 /* -------------------- Phone-auth OTP -------------------- */
 function ensureRecaptcha(containerId = "recaptcha-container") {
   if (!auth) return null;
@@ -372,11 +528,17 @@ window.Portal = {
   // Restaurants / comments
   fetchRestaurants,
   fetchApprovedComments,
-  // Complaints
+  // Complaints (consumer)
   submitComplaint,
   fetchComplaintById,
   fetchComplaintsByPhone,
   generateComplaintId,
+  // Complaints (FBO + FSO)
+  fetchComplaintsForFbo,
+  fetchAllComplaints,
+  updateComplaint,
+  fbo,
+  fso,
   // Auth / OTP
   sendOtp,
   verifyOtp,
@@ -396,6 +558,11 @@ export {
   submitComplaint,
   fetchComplaintById,
   fetchComplaintsByPhone,
+  fetchComplaintsForFbo,
+  fetchAllComplaints,
+  updateComplaint,
+  fbo,
+  fso,
   sendOtp,
   verifyOtp,
   onAuthChanged,

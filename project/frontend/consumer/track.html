@@ -160,8 +160,12 @@
             status: c.status || "Submitted",
             date: createdAt.toISOString().slice(0, 10),
             comment: c.comment || "",
+            improvementUpdate: c.improvementUpdate || "",
+            FSOAction: c.FSOAction || "",
+            officialNote: c.officialNote || "",
             assignedFSO: c.assignedFSO || "",
             flaggedByFBO: !!c.flaggedByFBO,
+            escalated: !!c.escalated,
           };
         }
         return { flaggedByFBO: false, ratings: null, ...c };
@@ -189,6 +193,27 @@
         if (c.flaggedByFBO) {
           qs("#trkFlag").innerHTML =
             '<span class="pill amber" style="font-size: 11px">🚨 Flagged — serious</span>';
+        } else if (c.escalated) {
+          qs("#trkFlag").innerHTML =
+            '<span class="pill amber" style="font-size: 11px">🔥 Escalated by FSO</span>';
+        }
+        if (c.improvementUpdate) {
+          qs("#trkComment").insertAdjacentHTML(
+            "afterend",
+            `<div class="notice sage" style="margin-top: 10px">
+               <span>📝</span> <strong>FBO improvement update:</strong> ${c.improvementUpdate}
+             </div>`
+          );
+        }
+        if (c.FSOAction) {
+          qs("#trkComment").insertAdjacentHTML(
+            "afterend",
+            `<div class="notice navy" style="margin-top: 10px">
+               <span>🏛</span> <strong>FSO action:</strong> ${c.FSOAction}${
+              c.officialNote ? ` — "${c.officialNote}"` : ""
+            }
+             </div>`
+          );
         }
 
         if (c.ratings && (c.ratings.cleanliness || c.ratings.freshness || c.ratings.hygiene)) {

@@ -18,12 +18,23 @@
       <h1 class="page-title">Food Business Operator Dashboard</h1>
       <p class="subtitle">
         Review verified customer feedback for your establishment and take
-        action. Consumer identity is protected and not shared.
+        corrective action. Consumer identity is withheld to protect confidential
+        reporting.
       </p>
 
+      <!-- FBO identity selector -->
+      <div class="identity-bar">
+        <span class="identity-label">🏢 Your Restaurant</span>
+        <select id="restaurantSelect">
+          <option value="">— Select your restaurant —</option>
+        </select>
+        <span id="identityBadge" class="identity-badge hidden"></span>
+      </div>
+
+      <!-- Stats -->
       <div class="stat-grid">
         <div class="stat-card">
-          <span class="stat-icon" id="fbIcon1"></span>
+          <span class="stat-icon" id="ficTotal">💬</span>
           <div>
             <div class="stat-label">Total Feedback</div>
             <div class="stat-value" id="fbTotal">0</div>
@@ -31,15 +42,15 @@
           </div>
         </div>
         <div class="stat-card">
-          <span class="stat-icon sage" id="fbIcon2"></span>
+          <span class="stat-icon sage">👍</span>
           <div>
             <div class="stat-label">Positive</div>
             <div class="stat-value" id="fbGood">0</div>
-            <div class="stat-hint"><span id="fbHint2"></span> 4★ and above</div>
+            <div class="stat-hint">4★ and above</div>
           </div>
         </div>
         <div class="stat-card">
-          <span class="stat-icon amber" id="fbIcon3"></span>
+          <span class="stat-icon amber">⏱</span>
           <div>
             <div class="stat-label">Under Review</div>
             <div class="stat-value" id="fbReview">0</div>
@@ -47,7 +58,7 @@
           </div>
         </div>
         <div class="stat-card">
-          <span class="stat-icon danger" id="fbIcon4"></span>
+          <span class="stat-icon danger">🚨</span>
           <div>
             <div class="stat-label">Flagged</div>
             <div class="stat-value" id="fbFlag">0</div>
@@ -57,289 +68,494 @@
       </div>
 
       <div class="notice navy">
-        <span id="shieldIcon"></span>
+        <span>🔒</span>
         Consumer names and phone numbers are withheld to ensure confidential
         reporting.
       </div>
 
-      <div class="flex-between" style="margin-top: 18px">
-        <h2 class="section-heading" style="margin: 0">
-          <span id="feedbackSectionIcon"></span>
-          Customer Feedback
-        </h2>
-        <span class="pill amber" id="filterHint"></span>
-      </div>
-
-      <div class="filter-row" style="margin-top: 12px">
+      <!-- Filter tabs -->
+      <div class="filter-row" style="margin-top: 14px">
         <button class="filter active" data-filter="all">
-          <span id="fil_all"></span> All Feedback
+          <span>🔲</span> All
         </button>
-        <button class="filter" data-filter="good">
-          <span id="fil_good"></span> Good
+        <button class="filter" data-filter="new">
+          <span>📥</span> New
         </button>
         <button class="filter" data-filter="review">
-          <span id="fil_rev"></span> Under Review
+          <span>⏱</span> Under Review
         </button>
-        <button class="filter" data-filter="flag">
-          <span id="fil_flag"></span> Flagged
+        <button class="filter" data-filter="resolved">
+          <span>✅</span> Resolved
+        </button>
+        <button class="filter" data-filter="flagged">
+          <span>🚨</span> Flagged
+        </button>
+        <button class="filter" data-filter="positive">
+          <span>👍</span> Positive Feedback
         </button>
       </div>
 
-      <div id="feedbackList"></div>
+      <div id="feedbackList">
+        <div class="card"><p class="muted">Pick your restaurant above to view feedback.</p></div>
+      </div>
+
+      <div class="spacer-lg"></div>
     </main>
 
-    <template id="resolveTemplate">
-      <div
-        class="card"
-        style="background: var(--sage-soft); border-color: var(--sage); margin-top: 10px"
-      >
-        <h4 class="flex" style="gap: 8px; margin-bottom: 6px">
-          <span class="resolve-head-icon"></span> Mark as Resolved
-        </h4>
-        <label class="label">
-          <span class="resolve-note-icon"></span> Improvement note
-        </label>
-        <textarea
-          class="textarea note-input"
-          placeholder="What corrective action did you take?"
-        ></textarea>
-        <div style="margin-top: 10px; display: flex; gap: 8px">
-          <button class="btn small sage submit-resolve">
-            <span class="resolve-submit-icon"></span> Submit
-          </button>
-          <button class="btn small secondary cancel-resolve">Cancel</button>
-        </div>
-      </div>
-    </template>
-
     <script src="/static/script.js"></script>
+    <script type="module" src="/static/firebase.js"></script>
     <script>
       qs("#navbar").innerHTML = renderNavbar("");
-      qs("#shieldIcon").innerHTML = Icons.lock;
-      qs("#feedbackSectionIcon").innerHTML = Icons.message;
-      qs("#filterHint").innerHTML =
-        `${icon("filter", "sm")} Filter by status`;
-      qs("#fbIcon1").innerHTML = Icons.message;
-      qs("#fbIcon2").innerHTML = Icons.thumbs_up;
-      qs("#fbIcon3").innerHTML = Icons.clock;
-      qs("#fbIcon4").innerHTML = Icons.flag;
-      qs("#fbHint2").innerHTML = icon("trending", "sm");
-      qs("#fil_all").innerHTML = icon("grid", "sm");
-      qs("#fil_good").innerHTML = icon("thumbs_up", "sm");
-      qs("#fil_rev").innerHTML = icon("clock", "sm");
-      qs("#fil_flag").innerHTML = icon("flag", "sm");
 
-      const FBO_FEEDBACK = [
-        {
-          id: "F001",
-          rating: 4.6,
-          comment: "Loved the food and hygiene.",
-          images: [],
-          type: "good",
-          state: "good",
-        },
-        {
-          id: "F002",
-          rating: 1.6,
-          comment: "Floor was dirty near the kitchen entrance.",
-          images: ["evidence_01.jpg", "bill_01.jpg"],
-          type: "bad",
-          state: "review",
-        },
-        {
-          id: "F003",
-          rating: 2.3,
-          comment: "Food tasted stale, not fresh.",
-          images: ["evidence_02.jpg"],
-          type: "bad",
-          state: "review",
-        },
-        {
-          id: "F004",
-          rating: 4.3,
-          comment: "Service was quick and staff was polite.",
-          images: [],
-          type: "good",
-          state: "good",
-        },
-      ];
+      let restaurants = [];
+      let complaints = [];
+      let activeFilter = "all";
+      let selectedLicense = "";
 
-      function stateChip(state) {
-        if (state === "good")
-          return `<span class="chip good">${icon(
-            "check",
-            "sm"
-          )} Good</span>`;
-        if (state === "review")
-          return `<span class="chip review">${icon(
-            "clock",
-            "sm"
-          )} Under Review</span>`;
-        if (state === "flag")
-          return `<span class="chip flag">${icon(
-            "flag",
-            "sm"
-          )} Flagged</span>`;
-        return "";
+      const FBO_SELECT_KEY = "fboSelectedLicense";
+
+      /* ---------- Helpers ---------- */
+      function starsOf(n) {
+        return renderStars(Number(n) || 0);
       }
 
-      function feedbackCard(f) {
-        const imagesHtml = f.images.length
-          ? f.images
-              .map(
-                (img) =>
-                  `<span class="image-thumb">${icon(
-                    "image",
-                    "sm"
-                  )}<br/>${img}</span>`
-              )
-              .join("")
-          : `<span class="pill" style="font-size: 11.5px">
-               ${icon("camera", "sm")} No images attached
-             </span>`;
+      function statusKind(c) {
+        if (c.flaggedByFBO) return "flagged";
+        if (c.status === "Action Taken" || c.fboReviewed === "completed") return "resolved";
+        if (c.status === "Under Review" || c.fboReviewed === "genuine") return "review";
+        if ((Number(c.overallRating) || 0) >= 4) return "positive";
+        return "new";
+      }
 
-        const actionsHtml =
-          f.type === "good"
-            ? `<button class="btn small thank-btn">
-                 ${icon("heart", "sm")} Send Thank You
-               </button>`
-            : `<button class="btn small resolve-btn">
-                 ${icon("check", "sm")} Mark as Resolved
-               </button>
-               <button class="btn small secondary flag-btn">
-                 ${icon("flag", "sm")} Flag as Incorrect
-               </button>`;
+      function statusEmoji(s) {
+        if (s === "Action Taken") return "✅";
+        if (s === "Under Review") return "🔎";
+        return "⏱";
+      }
 
-        const headIcon =
-          f.type === "good"
-            ? `<span class="icon-circle sage">${Icons.thumbs_up}</span>`
-            : `<span class="icon-circle amber">${Icons.alert}</span>`;
+      function formatDate(c) {
+        const d = c.createdAt && c.createdAt.toDate
+          ? c.createdAt.toDate()
+          : new Date(c.createdAt || Date.now());
+        return d.toISOString().slice(0, 10);
+      }
 
+      function photosBlock(c) {
+        const tiles = [];
+        if (c.evidencePhoto) {
+          tiles.push(
+            `<a class="photo-tile" href="${c.evidencePhoto}" target="_blank" rel="noopener">
+               <img src="${c.evidencePhoto}" alt="Evidence photo">
+             </a>`
+          );
+        }
+        if (c.billPhoto) {
+          tiles.push(
+            `<a class="photo-tile" href="${c.billPhoto}" target="_blank" rel="noopener">
+               <img src="${c.billPhoto}" alt="Bill photo">
+             </a>`
+          );
+        }
+        if (!tiles.length) {
+          tiles.push(
+            '<span class="photo-tile"><span class="photo-label">📷<br/>No photos</span></span>'
+          );
+        }
+        return `<div class="photo-grid">${tiles.join("")}</div>`;
+      }
+
+      function ratingBreakdown(c) {
+        if (!c.rating_cleanliness && !c.rating_food_freshness && !c.rating_staff_hygiene) {
+          return "";
+        }
         return `
-          <div class="card" data-id="${f.id}" data-state="${f.state}">
-            <div class="card-row">
-              <div class="flex" style="align-items: flex-start; gap: 12px">
-                ${headIcon}
-                <div>
-                  <div class="flex" style="gap: 10px; margin-bottom: 6px">
-                    <span class="stars">${renderStars(f.rating)}</span>
-                    <span class="rating-badge">
-                      ${icon("star", "sm")} ${f.rating.toFixed(1)} / 5
-                    </span>
-                  </div>
-                  <div class="muted" style="font-size: 12px; display: flex; align-items: center; gap: 4px">
-                    ${icon("document", "sm")} Feedback ID: ${f.id}
-                  </div>
-                </div>
+          <div class="kv-grid" style="margin-top: 10px">
+            <div class="kv">
+              <span class="icon-circle sage">🏢</span>
+              <div>
+                <div class="kv-label">Premise Cleanliness</div>
+                <div class="kv-value">${c.rating_cleanliness || "—"} / 5</div>
               </div>
-              <div class="state-chip">${stateChip(f.state)}</div>
             </div>
-            <p style="margin: 12px 0">${f.comment}</p>
-            <div style="margin-bottom: 12px">${imagesHtml}</div>
-            <hr class="divider-dashed" />
-            <div class="flex flex-wrap" style="gap: 8px">${actionsHtml}</div>
-            <div class="resolve-slot"></div>
+            <div class="kv">
+              <span class="icon-circle amber">🍽</span>
+              <div>
+                <div class="kv-label">Food Freshness</div>
+                <div class="kv-value">${c.rating_food_freshness || "—"} / 5</div>
+              </div>
+            </div>
+            <div class="kv">
+              <span class="icon-circle">🧤</span>
+              <div>
+                <div class="kv-label">Staff Hygiene</div>
+                <div class="kv-value">${c.rating_staff_hygiene || "—"} / 5</div>
+              </div>
+            </div>
           </div>`;
       }
 
-      function refreshStats() {
-        qs("#fbTotal").textContent = FBO_FEEDBACK.length;
-        qs("#fbGood").textContent = FBO_FEEDBACK.filter(
-          (f) => f.state === "good"
-        ).length;
-        qs("#fbReview").textContent = FBO_FEEDBACK.filter(
-          (f) => f.state === "review"
-        ).length;
-        qs("#fbFlag").textContent = FBO_FEEDBACK.filter(
-          (f) => f.state === "flag"
-        ).length;
+      function headIcon(c) {
+        const kind = statusKind(c);
+        if (kind === "resolved") return '<span class="icon-circle sage lg">✅</span>';
+        if (kind === "flagged")  return '<span class="icon-circle danger lg">🚨</span>';
+        if (kind === "positive") return '<span class="icon-circle sage lg">👍</span>';
+        if (kind === "review")   return '<span class="icon-circle amber lg">🔎</span>';
+        return '<span class="icon-circle amber lg">📥</span>';
       }
 
-      const listEl = qs("#feedbackList");
+      function chipFor(c) {
+        const s = c.status || "Submitted";
+        const cls = {
+          Submitted: "chip pending",
+          Pending: "chip pending",
+          "Under Review": "chip review",
+          "Action Taken": "chip action",
+        }[s] || "chip";
+        return `<span class="${cls}">${statusEmoji(s)} ${s}</span>`;
+      }
 
-      function renderList(filter = "all") {
-        const data =
-          filter === "all"
-            ? FBO_FEEDBACK
-            : FBO_FEEDBACK.filter((f) => f.state === filter);
-        if (!data.length) {
+      function timelineStack(c) {
+        const items = [];
+        items.push(`<div><span class="muted-label">Submitted</span>${formatDate(c)}</div>`);
+        if (c.fboReviewed) {
+          items.push(
+            `<div><span class="muted-label">FBO Review</span>${c.fboReviewed}</div>`
+          );
+        }
+        if (c.improvementUpdate) {
+          items.push(
+            `<div><span class="muted-label">Improvement</span>${c.improvementUpdate}</div>`
+          );
+        }
+        if (c.FSOAction) {
+          items.push(
+            `<div><span class="muted-label">FSO Action</span>${c.FSOAction}</div>`
+          );
+        }
+        if (c.flaggedByFBO) {
+          items.push(
+            `<div><span class="muted-label">Flagged</span>Awaiting FSO re-review</div>`
+          );
+        }
+        return `<div class="meta-stack">${items.join("")}</div>`;
+      }
+
+      function actionPanel(c) {
+        const positive = (Number(c.overallRating) || 0) >= 4;
+        const kind = statusKind(c);
+        const resolved = kind === "resolved";
+        const flagged = kind === "flagged";
+
+        if (resolved) {
+          return `
+            <div class="notice sage" style="margin-top: 10px">
+              <span>✅</span>
+              Resolved. ${c.improvementUpdate ? `Note: "${c.improvementUpdate}"` : ""}
+            </div>`;
+        }
+
+        if (positive) {
+          return `
+            <div class="flex flex-wrap" style="gap: 8px; margin-top: 10px">
+              <button class="btn small" data-act="thank">
+                <span>💌</span> Send Thank You
+              </button>
+              ${c.thankYouSent
+                ? '<span class="pill sage">✅ Thank you sent</span>'
+                : ""}
+            </div>`;
+        }
+
+        return `
+          <div class="flex flex-wrap" style="gap: 8px; margin-top: 10px">
+            <button class="btn small" data-act="genuine">
+              <span>🛡</span> Mark as Genuine
+            </button>
+            <button class="btn small secondary" data-act="improve">
+              <span>📝</span> Add Improvement Update
+            </button>
+            <button class="btn small sage" data-act="completed">
+              <span>✅</span> Mark Improvement Completed
+            </button>
+            <button class="btn small danger" data-act="flag" ${flagged ? "disabled" : ""}>
+              <span>🚩</span> ${flagged ? "Flagged" : "Flag as Fake"}
+            </button>
+          </div>
+          <div class="action-slot"></div>`;
+      }
+
+      function complaintCard(c) {
+        return `
+          <div class="card" data-id="${c.complaintId || ""}" data-kind="${statusKind(c)}">
+            <div class="card-row">
+              <div class="flex" style="align-items: flex-start; gap: 14px">
+                ${headIcon(c)}
+                <div>
+                  <div class="flex" style="gap: 10px; margin-bottom: 6px; flex-wrap: wrap">
+                    <span class="stars">${starsOf(c.overallRating)}</span>
+                    <span class="rating-badge">
+                      <span>⭐</span> ${Number(c.overallRating || 0).toFixed(1)} / 5
+                    </span>
+                  </div>
+                  <h3 style="margin: 0 0 4px">${c.restaurantName || "—"}</h3>
+                  <div class="meta"><span>📄</span> ${c.complaintId || "—"}</div>
+                  <div class="meta" style="margin-top: 4px"><span>⏱</span> Filed: ${formatDate(c)}</div>
+                  <div class="meta" style="margin-top: 4px"><span>🛡</span> Anonymous consumer</div>
+                </div>
+              </div>
+              <div style="text-align: right">
+                ${chipFor(c)}
+                ${c.flaggedByFBO ? '<div style="margin-top: 6px"><span class="pill amber">🚨 Flagged</span></div>' : ""}
+              </div>
+            </div>
+
+            ${c.comment ? `<p style="margin: 12px 0 4px">${c.comment}</p>` : ""}
+
+            ${ratingBreakdown(c)}
+
+            <h4 class="section-heading" style="margin: 14px 0 4px; font-size: 14px">
+              <span>📷</span> Evidence
+            </h4>
+            ${photosBlock(c)}
+
+            <hr class="divider-dashed" />
+
+            ${timelineStack(c)}
+
+            ${actionPanel(c)}
+          </div>`;
+      }
+
+      /* ---------- Stats & filtered rendering ---------- */
+      function updateStats() {
+        qs("#fbTotal").textContent = complaints.length;
+        qs("#fbGood").textContent = complaints.filter(
+          (c) => (Number(c.overallRating) || 0) >= 4
+        ).length;
+        qs("#fbReview").textContent = complaints.filter(
+          (c) => statusKind(c) === "review"
+        ).length;
+        qs("#fbFlag").textContent = complaints.filter((c) => c.flaggedByFBO).length;
+      }
+
+      function applyFilter(list) {
+        if (activeFilter === "all") return list;
+        if (activeFilter === "positive")
+          return list.filter((c) => (Number(c.overallRating) || 0) >= 4);
+        return list.filter((c) => statusKind(c) === activeFilter);
+      }
+
+      function render() {
+        const listEl = qs("#feedbackList");
+        if (!selectedLicense) {
           listEl.innerHTML =
-            '<div class="card"><p class="muted">No feedback matches this filter.</p></div>';
+            '<div class="card"><p class="muted">Pick your restaurant above to view feedback.</p></div>';
           return;
         }
-        listEl.innerHTML = data.map(feedbackCard).join("");
+        const filtered = applyFilter(complaints);
+        if (!filtered.length) {
+          listEl.innerHTML =
+            '<div class="card"><p class="muted">No complaints match this filter.</p></div>';
+          return;
+        }
+        listEl.innerHTML = filtered.map(complaintCard).join("");
       }
 
-      renderList();
-      refreshStats();
+      /* ---------- Action handling ---------- */
+      function confirmBlocking(msg) {
+        return window.confirm(msg);
+      }
+
+      async function onCardAction(e) {
+        const btn = e.target.closest("[data-act]");
+        if (!btn) return;
+        const card = e.target.closest(".card");
+        if (!card) return;
+        const id = card.dataset.id;
+        if (!id) return;
+        const act = btn.dataset.act;
+
+        if (!window.Portal || !window.Portal.fbo) {
+          alert("Firebase not ready. Please reload.");
+          return;
+        }
+
+        const slot = card.querySelector(".action-slot");
+
+        if (act === "thank") {
+          btn.disabled = true;
+          btn.textContent = "Sending…";
+          await window.Portal.fbo.sendThankYou(id);
+          const c = complaints.find((x) => x.complaintId === id);
+          if (c) c.thankYouSent = true;
+          render();
+          return;
+        }
+
+        if (act === "genuine") {
+          btn.disabled = true;
+          await window.Portal.fbo.markGenuine(id);
+          const c = complaints.find((x) => x.complaintId === id);
+          if (c) { c.fboReviewed = "genuine"; c.status = "Under Review"; }
+          updateStats();
+          render();
+          return;
+        }
+
+        if (act === "improve") {
+          slot.innerHTML = `
+            <div class="action-panel">
+              <h4>📝 Add improvement update</h4>
+              <textarea class="textarea note-input" placeholder="What corrective action are you taking?"></textarea>
+              <div class="actions">
+                <button class="btn small" data-sub="improve-submit">Submit Update</button>
+                <button class="btn small secondary" data-sub="cancel">Cancel</button>
+              </div>
+            </div>`;
+          return;
+        }
+
+        if (act === "completed") {
+          slot.innerHTML = `
+            <div class="action-panel">
+              <h4>✅ Mark improvement completed</h4>
+              <textarea class="textarea note-input" placeholder="Optional note about the improvement…"></textarea>
+              <div class="actions">
+                <button class="btn small sage" data-sub="completed-submit">Confirm</button>
+                <button class="btn small secondary" data-sub="cancel">Cancel</button>
+              </div>
+            </div>`;
+          return;
+        }
+
+        if (act === "flag") {
+          if (!confirmBlocking("Flag this complaint as potentially fake?")) return;
+          slot.innerHTML = `
+            <div class="action-panel">
+              <h4>🚩 Flag as fake</h4>
+              <textarea class="textarea note-input" placeholder="Briefly explain why you believe this complaint is incorrect…"></textarea>
+              <div class="actions">
+                <button class="btn small danger" data-sub="flag-submit">Flag & Notify FSO</button>
+                <button class="btn small secondary" data-sub="cancel">Cancel</button>
+              </div>
+            </div>`;
+          return;
+        }
+      }
+
+      async function onPanelAction(e) {
+        const btn = e.target.closest("[data-sub]");
+        if (!btn) return;
+        const card = e.target.closest(".card");
+        const id = card.dataset.id;
+        const panel = e.target.closest(".action-panel");
+        const note = (panel.querySelector(".note-input")?.value || "").trim();
+
+        if (btn.dataset.sub === "cancel") {
+          card.querySelector(".action-slot").innerHTML = "";
+          return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = "Submitting…";
+
+        if (btn.dataset.sub === "improve-submit") {
+          if (!note) { alert("Please add a note."); btn.disabled = false; btn.textContent = "Submit Update"; return; }
+          await window.Portal.fbo.addImprovementUpdate(id, note);
+          const c = complaints.find((x) => x.complaintId === id);
+          if (c) { c.improvementUpdate = note; c.fboReviewed = "genuine"; c.status = "Under Review"; }
+        } else if (btn.dataset.sub === "completed-submit") {
+          await window.Portal.fbo.markImprovementCompleted(id, note);
+          const c = complaints.find((x) => x.complaintId === id);
+          if (c) { c.fboReviewed = "completed"; c.status = "Action Taken"; if (note) c.improvementUpdate = note; }
+        } else if (btn.dataset.sub === "flag-submit") {
+          await window.Portal.fbo.flagComplaint(id, note);
+          const c = complaints.find((x) => x.complaintId === id);
+          if (c) { c.flaggedByFBO = true; c.flagReason = note; c.fboReviewed = "flagged"; c.status = "Under Review"; }
+        }
+
+        updateStats();
+        render();
+      }
+
+      qs("#feedbackList").addEventListener("click", (e) => {
+        onCardAction(e);
+        onPanelAction(e);
+      });
 
       qsa(".filter-row .filter").forEach((btn) => {
         btn.addEventListener("click", () => {
           qsa(".filter-row .filter").forEach((b) => b.classList.remove("active"));
           btn.classList.add("active");
-          renderList(btn.dataset.filter);
+          activeFilter = btn.dataset.filter;
+          render();
         });
       });
 
-      listEl.addEventListener("click", (e) => {
-        const card = e.target.closest(".card");
-        if (!card) return;
-
-        if (e.target.closest(".thank-btn")) {
-          const btn = e.target.closest(".thank-btn");
-          alert("Thank-you note sent to the consumer.");
-          btn.disabled = true;
-          btn.innerHTML = `${icon("check", "sm")} Thank You Sent`;
+      /* ---------- Bootstrap: restaurants + complaints ---------- */
+      async function loadRestaurants() {
+        if (window.Portal && window.Portal.fetchRestaurants) {
+          const list = await window.Portal.fetchRestaurants();
+          if (list && list.length) return list;
         }
+        return MOCK_RESTAURANTS;
+      }
 
-        if (e.target.closest(".flag-btn")) {
-          if (confirm("Flag this feedback as incorrect?")) {
-            card.dataset.state = "flag";
-            card.querySelector(".state-chip").innerHTML = stateChip("flag");
-            card.style.opacity = "0.75";
-            e.target.closest(".flag-btn").disabled = true;
-            const item = FBO_FEEDBACK.find((f) => f.id === card.dataset.id);
-            if (item) item.state = "flag";
-            refreshStats();
-          }
+      async function loadComplaints(license) {
+        if (!license) return [];
+        if (window.Portal && window.Portal.fetchComplaintsForFbo) {
+          const list = await window.Portal.fetchComplaintsForFbo({ license });
+          if (Array.isArray(list)) return list;
         }
+        return [];
+      }
 
-        if (e.target.closest(".resolve-btn")) {
-          const tpl = qs("#resolveTemplate").content.cloneNode(true);
-          card.querySelector(".resolve-slot").replaceChildren(tpl);
-          const slot = card.querySelector(".resolve-slot");
-          slot.querySelector(".resolve-head-icon").innerHTML =
-            icon("check", "sm");
-          slot.querySelector(".resolve-note-icon").innerHTML =
-            icon("document", "sm");
-          slot.querySelector(".resolve-submit-icon").innerHTML =
-            icon("check", "sm");
+      function populateRestaurantSelect() {
+        const sel = qs("#restaurantSelect");
+        sel.innerHTML = '<option value="">— Select your restaurant —</option>';
+        restaurants.forEach((r) => {
+          const opt = document.createElement("option");
+          opt.value = r.license;
+          opt.textContent = `${r.name} · ${r.license}`;
+          sel.appendChild(opt);
+        });
+        const cached = sessionStorage.getItem(FBO_SELECT_KEY);
+        if (cached && restaurants.some((r) => r.license === cached)) {
+          sel.value = cached;
         }
+      }
 
-        if (e.target.closest(".cancel-resolve")) {
-          card.querySelector(".resolve-slot").replaceChildren();
+      async function onIdentityChange() {
+        selectedLicense = qs("#restaurantSelect").value;
+        sessionStorage.setItem(FBO_SELECT_KEY, selectedLicense);
+        const r = restaurants.find((x) => x.license === selectedLicense);
+        const badge = qs("#identityBadge");
+        if (r) {
+          badge.textContent = `${r.name} · ${r.location || ""}`;
+          badge.classList.remove("hidden");
+        } else {
+          badge.classList.add("hidden");
         }
+        complaints = await loadComplaints(selectedLicense);
+        updateStats();
+        render();
+      }
 
-        if (e.target.closest(".submit-resolve")) {
-          const note = card.querySelector(".note-input").value.trim();
-          if (!note) {
-            alert("Please add an improvement note.");
-            return;
-          }
-          card.querySelector(".resolve-slot").innerHTML =
-            `<div class="notice sage" style="margin-top: 10px">
-               ${icon("verified", "sm")} Resolved. Note: "${note}"
-             </div>`;
-          card.dataset.state = "good";
-          card.querySelector(".state-chip").innerHTML = stateChip("good");
-          card
-            .querySelectorAll(".resolve-btn, .flag-btn")
-            .forEach((b) => (b.disabled = true));
-          const item = FBO_FEEDBACK.find((f) => f.id === card.dataset.id);
-          if (item) item.state = "good";
-          refreshStats();
+      qs("#restaurantSelect").addEventListener("change", onIdentityChange);
+
+      async function boot() {
+        restaurants = await loadRestaurants();
+        populateRestaurantSelect();
+        if (qs("#restaurantSelect").value) {
+          await onIdentityChange();
+        } else {
+          updateStats();
+          render();
         }
-      });
+      }
+
+      if (window.Portal) boot();
+      else window.addEventListener("portal:ready", boot, { once: true });
     </script>
   </body>
 </html>
