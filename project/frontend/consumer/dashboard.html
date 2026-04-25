@@ -106,23 +106,6 @@
           submitted complaints. Flagged/serious complaints are highlighted.
         </div>
 
-        <!-- Assigned FSO card -->
-        <div class="card" id="fsoCard" style="background: var(--cream)">
-          <h3>🏛 Your Assigned Food Safety Officer</h3>
-          <div class="flex" style="gap: 14px; align-items: flex-start; margin-top: 6px">
-            <span class="icon-circle sage">👮</span>
-            <div style="flex: 1">
-              <h4 id="fsoName" style="margin: 0 0 2px">—</h4>
-              <div class="meta" id="fsoDesig"></div>
-              <div class="meta" style="margin-top: 4px" id="fsoOffice"></div>
-              <div class="meta" style="margin-top: 4px" id="fsoJuris"></div>
-            </div>
-            <a class="btn" id="fsoCall" href="#">
-              <span>📞</span> Contact
-            </a>
-          </div>
-        </div>
-
         <div class="flex-between" style="margin-top: 22px; margin-bottom: 12px">
           <h2 class="section-heading" style="margin: 0">
             <span id="listIcon"></span>
@@ -289,18 +272,6 @@
         return { flaggedByFBO: false, ...c };
       }
 
-      function renderFsoCard(location) {
-        const officer =
-          (typeof findOfficerByArea === "function" && findOfficerByArea(location)) ||
-          (typeof DEFAULT_OFFICER !== "undefined" ? DEFAULT_OFFICER : null);
-        if (!officer) return;
-        qs("#fsoName").textContent = officer.name;
-        qs("#fsoDesig").innerHTML = `<span>🪪</span> ${officer.designation}`;
-        qs("#fsoOffice").innerHTML = `<span>🏢</span> ${officer.office}`;
-        qs("#fsoJuris").innerHTML = `<span>📌</span> ${officer.jurisdiction}`;
-        qs("#fsoCall").href = `tel:${officer.contact.replace(/[^\d+]/g, "")}`;
-      }
-
       let unsubLive = null;
 
       function startLive(phone) {
@@ -335,13 +306,6 @@
         qs("#sdAction").textContent = all.filter(
           (c) => c.status === "Action Taken"
         ).length;
-
-        // Use the most recent complaint's restaurant location to pick an FSO
-        const anyLocation =
-          (all[0] && all[0].restaurantLocation) ||
-          (all[0] && all[0].restaurant) ||
-          "";
-        renderFsoCard(anyLocation);
 
         if (!all.length) {
           listEl.innerHTML =
@@ -423,21 +387,31 @@
           .join("");
       }
 
-      // Auto-login if Firebase already has a user, or if we have a saved phone
+      /* Auto-skip login if a phone is already cached in this session, e.g.
+       * when the consumer returns from track.html via the Back button or
+       * after submitting a complaint. Sign Out clears the cache. */
+      function enterDashboard(phone) {
+        qs("#loginStep").classList.add("hidden");
+        qs("#otpStep").classList.add("hidden");
+        qs("#dashboardStep").classList.remove("hidden");
+        Store.set("consumerPhone", phone);
+        startLive(phone);
+      }
+
       function boot() {
         const cached = Store.get("consumerPhone");
-        if (cached) qs("#loginPhone").value = cached;
+        if (cached) {
+          qs("#loginPhone").value = cached;
+          enterDashboard(cached);
+          return;
+        }
 
         const tryAuto = () => {
           if (!window.Portal) return;
           if (window.Portal.isAuthReady && window.Portal.onAuthChanged) {
-            window.Portal.onAuthChanged(async (user) => {
+            window.Portal.onAuthChanged((user) => {
               if (user && user.phoneNumber) {
-                qs("#loginStep").classList.add("hidden");
-                qs("#otpStep").classList.add("hidden");
-                qs("#dashboardStep").classList.remove("hidden");
-                Store.set("consumerPhone", user.phoneNumber);
-                startLive(user.phoneNumber);
+                enterDashboard(user.phoneNumber);
               }
             });
           }
