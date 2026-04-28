@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Consumer Grievance Portal | Report a Food Safety Issue</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div id="navbar"></div>
+
+    <!-- Homepage-only: hero + stat cards + nearby grid -->
+    <div id="homeView">
+      <section class="hero">
+        <div class="hero-inner">
+          <span class="title-chip" id="heroBadge"></span>
+          <h1>Report a Food Safety Issue</h1>
+          <p>
+            Your feedback safeguards public health. Search for a registered
+            restaurant or scan the on-premise QR code to share your experience.
+          </p>
+          <div class="searchbar">
+            <span class="icon" id="heroSearchIcon"></span>
+            <input
+              id="searchInput"
+              type="text"
+              placeholder="Search by restaurant name or FSSAI license number"
+              aria-label="Search restaurants"
+            />
+            <button class="btn" id="heroSearchBtn">
+              <span id="heroBtnIcon"></span> Search
+            </button>
+          </div>
+          <div class="flex" style="gap: 10px; margin-top: 18px; flex-wrap: wrap">
+            <span class="pill navy" id="pillQr"></span>
+            <span class="pill sage" id="pillVerified"></span>
+            <span class="pill amber" id="pillConfidential"></span>
+          </div>
+        </div>
+      </section>
+
+      <main class="container">
+        <!-- FSO-jurisdiction summary -->
+        <div class="flex-between" style="margin-bottom: 10px">
+          <h2 class="section-heading" style="margin: 0">
+            <span id="summaryIcon"></span> FSO Jurisdiction Summary
+          </h2>
+          <span class="pill navy" id="jurisLabel"></span>
+        </div>
+        <div class="stat-grid">
+          <div class="stat-card">
+            <span class="stat-icon" id="statIcon1"></span>
+            <div>
+              <div class="stat-label">Registered FBOs</div>
+              <div class="stat-value" id="statValue1">—</div>
+              <div class="stat-hint">in this region</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <span class="stat-icon sage" id="statIcon2"></span>
+            <div>
+              <div class="stat-label">Avg. Hygiene Score</div>
+              <div class="stat-value" id="statValue2">—</div>
+              <div class="stat-hint">last 30 days</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <span class="stat-icon amber" id="statIcon3"></span>
+            <div>
+              <div class="stat-label">Complaints Resolved</div>
+              <div class="stat-value">94%</div>
+              <div class="stat-hint">within 7 days</div>
+            </div>
+          </div>
+        </div>
+
+        <section id="nearbySection">
+          <div class="section-row">
+            <h2 class="section-heading">
+              <span class="icon" id="nearbyIcon"></span>
+              Nearby Registered Restaurants
+            </h2>
+            <div class="section-tools">
+              <span class="pill sage" id="nearbyCount"></span>
+              <div class="area-filter">
+                <span>📍</span>
+                <label for="areaSelect">Area</label>
+                <select id="areaSelect">
+                  <option value="">All Shillong</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div id="firestoreNotice" class="notice hidden" style="margin: 6px 0 14px">
+            ⚠ Showing mock data. To load live listings, fill your Firebase
+            web config in <code>frontend/shared/firebase.js</code>.
+          </div>
+          <div class="restaurant-grid" id="restaurantList">
+            <div class="card muted">Loading restaurants…</div>
+          </div>
+        </section>
+
+        <section id="notFoundSection" class="hidden">
+          <div class="card">
+            <h3>No matching restaurant found</h3>
+            <p class="muted">
+              Couldn't find the place you visited? You can report an
+              unregistered business for review by a Food Safety Officer.
+            </p>
+            <button id="openUnregBtn" class="btn">
+              <span id="reportIcon"></span>
+              Report Unregistered Business
+            </button>
+          </div>
+        </section>
+
+        <section id="unregFormSection" class="hidden">
+          <div class="card">
+            <h3>Report Unregistered Business</h3>
+            <p class="muted" style="margin-top: 4px">
+              This report will be forwarded to the Food Safety Officer for
+              the region.
+            </p>
+
+            <label class="label" for="unregName">
+              <span id="uIc1"></span> Restaurant name
+            </label>
+            <input id="unregName" class="input" type="text" />
+
+            <label class="label" for="unregLocation">
+              <span id="uIc2"></span> Location / Address
+            </label>
+            <input id="unregLocation" class="input" type="text" />
+
+            <label class="label" for="unregImages">
+              <span id="uIc3"></span> Upload images
+            </label>
+            <input id="unregImages" class="input" type="file" multiple />
+
+            <label class="label" for="unregComments">
+              <span id="uIc4"></span> Comments
+            </label>
+            <textarea id="unregComments" class="textarea"></textarea>
+
+            <div style="margin-top: 18px; display: flex; gap: 10px">
+              <button id="unregSubmit" class="btn">Submit Report</button>
+              <button id="unregCancel" class="btn secondary">Cancel</button>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <!-- Restaurant detail view (takes over when a card is clicked) -->
+    <div id="detailView" class="hidden">
+      <main class="container">
+        <a href="#" id="backBtn" class="back-link">
+          <span id="backIcon"></span> Back to Restaurants
+        </a>
+
+        <div class="card" style="margin-top: 14px">
+          <div class="detail-head">
+            <span class="icon-circle" id="detailAvatar"></span>
+            <div style="flex: 1">
+              <h2 class="page-title" id="dName" style="margin: 0 0 4px"></h2>
+              <div class="meta" id="dLocation"></div>
+              <div class="flex" style="gap: 8px; margin-top: 6px; flex-wrap: wrap">
+                <span class="rating-badge" id="dRating"></span>
+                <span class="stars" id="dStars"></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="detail-meta-grid">
+            <div class="kv">
+              <span class="icon-circle">🏢</span>
+              <div>
+                <div class="kv-label">Restaurant</div>
+                <div class="kv-value" id="dNameKv">—</div>
+              </div>
+            </div>
+            <div class="kv">
+              <span class="icon-circle sage">🛡</span>
+              <div>
+                <div class="kv-label">License Number</div>
+                <div class="kv-value" id="dLicense">—</div>
+              </div>
+            </div>
+            <div class="kv">
+              <span class="icon-circle amber">📍</span>
+              <div>
+                <div class="kv-label">Location</div>
+                <div class="kv-value" id="dLocKv">—</div>
+              </div>
+            </div>
+            <div class="kv">
+              <span class="icon-circle amber">⭐</span>
+              <div>
+                <div class="kv-label">FSSAI Rating</div>
+                <div class="kv-value" id="dRatingKv">—</div>
+              </div>
+            </div>
+          </div>
+
+          <button id="fileGrievanceBtn" class="btn block" style="margin-top: 20px; font-size: 15px">
+            <span id="grievanceIcon"></span> File a Grievance
+          </button>
+        </div>
+
+        <h3 class="section-heading" style="margin-top: 28px">
+          <span id="commentsIcon"></span> Public Comments
+          <span class="pill navy" style="margin-left: auto" id="commentsMeta">
+            FSO-reviewed only
+          </span>
+        </h3>
+        <ul class="comment-list" id="commentList"></ul>
+
+        <div class="spacer-lg"></div>
+      </main>
+    </div>
+
+    <script src="/static/script.js"></script>
+    <script type="module" src="/static/firebase.js"></script>
+    <script>
+      qs("#navbar").innerHTML = renderNavbar("home");
+      qs("#heroSearchIcon").innerHTML = Icons.search;
+      qs("#heroBtnIcon").innerHTML = Icons.search;
+      qs("#nearbyIcon").innerHTML = Icons.pin;
+      qs("#reportIcon").innerHTML = Icons.megaphone;
+      qs("#commentsIcon").innerHTML = Icons.message;
+      qs("#backIcon").innerHTML = Icons.arrow_left;
+      qs("#grievanceIcon").innerHTML = Icons.clipboard;
+      qs("#summaryIcon").innerHTML = Icons.chart;
+      qs("#heroBadge").innerHTML =
+        `${icon("shield", "sm")} Food Safety & Standards Authority`;
+      qs("#pillQr").innerHTML = `${icon("qr", "sm")} Scan QR at restaurant`;
+      qs("#pillVerified").innerHTML =
+        `${icon("verified", "sm")} FSSAI verified listings`;
+      qs("#pillConfidential").innerHTML =
+        `${icon("lock", "sm")} Confidential reporting`;
+      qs("#jurisLabel").innerHTML =
+        `${icon("pin_code", "sm")} Jurisdiction: Shillong, Meghalaya`;
+
+      // Populate area filter
+      const areaSel = qs("#areaSelect");
+      SHILLONG_AREAS.forEach((a) => {
+        const opt = document.createElement("option");
+        opt.value = a;
+        opt.textContent = a;
+        areaSel.appendChild(opt);
+      });
+      qs("#statIcon1").innerHTML = Icons.building;
+      qs("#statIcon2").innerHTML = Icons.sparkle;
+      qs("#statIcon3").innerHTML = Icons.verified;
+      qs("#uIc1").innerHTML = Icons.building;
+      qs("#uIc2").innerHTML = Icons.pin;
+      qs("#uIc3").innerHTML = Icons.camera;
+      qs("#uIc4").innerHTML = Icons.message;
+
+      const listEl = qs("#restaurantList");
+      const searchEl = qs("#searchInput");
+      const notFoundEl = qs("#notFoundSection");
+      const unregFormEl = qs("#unregFormSection");
+      const homeView = qs("#homeView");
+      const detailView = qs("#detailView");
+      const nearbyEl = qs("#nearbySection");
+
+      // Live dataset - replaced by Firestore if available
+      let restaurants = MOCK_RESTAURANTS.slice();
+
+      function updateStats() {
+        qs("#statValue1").textContent = restaurants.length;
+        const avg =
+          restaurants.reduce((a, b) => a + (b.rating || 0), 0) /
+          Math.max(restaurants.length, 1);
+        qs("#statValue2").textContent = avg ? avg.toFixed(1) : "—";
+      }
+
+      function renderRestaurants(list) {
+        if (!list.length) {
+          listEl.innerHTML = "";
+          notFoundEl.classList.remove("hidden");
+          return;
+        }
+        notFoundEl.classList.add("hidden");
+        qs("#nearbyCount").innerHTML =
+          `${icon("grid", "sm")} ${list.length} listings`;
+        listEl.innerHTML = list
+          .map(
+            (r) => `
+            <article class="restaurant-card" data-id="${r.id}">
+              <div class="image">
+                <span class="monogram">${initials(r.name)}</span>
+                <span class="verified-pill">✅ FSSAI</span>
+                <span class="badge-top">⭐ ${Number(r.rating).toFixed(1)}</span>
+              </div>
+              <div class="body">
+                <h3>${r.name}</h3>
+                <div class="meta">📍 ${r.location || ""}</div>
+                ${
+                  r.cuisine
+                    ? `<div class="meta">🍽 ${r.cuisine}</div>`
+                    : ""
+                }
+                <div class="restaurant-foot">
+                  <span class="tag">🛡 ${r.license}</span>
+                  <span class="stars">${renderStars(r.rating)}</span>
+                  <span class="pill" style="font-size: 11px; margin-left: auto">
+                    👁 View · ⭐ Rate
+                  </span>
+                </div>
+              </div>
+            </article>`
+          )
+          .join("");
+
+        qsa(".restaurant-card", listEl).forEach((card) => {
+          card.addEventListener("click", () => {
+            const id = card.dataset.id;
+            const r = restaurants.find((x) => x.id === id);
+            if (r) showDetailView(r);
+          });
+        });
+      }
+
+      function commentList(r) {
+        const approved = (r.comments || []).filter(
+          (c) => !c.status || c.status === "approved"
+        );
+        if (!approved.length) {
+          return '<li class="muted" style="border-left-color: var(--border-strong)">No reviewed comments yet.</li>';
+        }
+        return approved
+          .map(
+            (c) => `
+              <li class="${c.type === "bad" ? "bad" : ""}">
+                <span class="comment-icon">${
+                  c.type === "good" ? "👍" : "⚠"
+                }</span>
+                <div>
+                  <span class="tag" style="background: ${
+                    c.type === "good" ? "var(--sage-soft)" : "var(--amber-soft)"
+                  }; border-color: ${
+              c.type === "good" ? "var(--sage)" : "var(--amber)"
+            }; font-size: 10px">${
+              c.type === "good" ? "Positive" : "Concern"
+            }</span>
+                  <div style="margin-top: 4px">${c.text}</div>
+                </div>
+              </li>`
+          )
+          .join("");
+      }
+
+      function showDetailView(r) {
+        Store.set("selectedRestaurant", r);
+        homeView.classList.add("hidden");
+        detailView.classList.remove("hidden");
+        qs("#detailAvatar").textContent = initials(r.name);
+        qs("#dName").textContent = r.name;
+        qs("#dNameKv").textContent = r.name;
+        qs("#dLocation").innerHTML = `${icon("pin", "sm")} ${r.location || "—"}`;
+        qs("#dLocKv").textContent = r.location || "—";
+        qs("#dLicense").textContent = r.license || "—";
+        qs("#dRating").innerHTML = `${icon("star", "sm")} ${Number(
+          r.rating
+        ).toFixed(1)} / 5`;
+        qs("#dRatingKv").textContent = `${Number(r.rating).toFixed(1)} / 5`;
+        qs("#dStars").textContent = renderStars(r.rating);
+        qs("#commentList").innerHTML = commentList(r);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+
+        // Try to enrich comments from Firestore if available
+        if (window.Portal && window.Portal.isFirebaseReady) {
+          window.Portal.fetchApprovedComments(r.id).then((cs) => {
+            if (cs && cs.length) {
+              qs("#commentList").innerHTML = commentList({ comments: cs });
+            }
+          });
+        }
+      }
+
+      function showHomeView() {
+        detailView.classList.add("hidden");
+        homeView.classList.remove("hidden");
+      }
+
+      function filterRestaurants() {
+        const lower = (searchEl.value || "").trim().toLowerCase();
+        const area = (qs("#areaSelect").value || "").toLowerCase();
+        return restaurants.filter((r) => {
+          const matchesQuery =
+            !lower ||
+            (r.name || "").toLowerCase().includes(lower) ||
+            (r.license || "").toLowerCase().includes(lower);
+          const areaField = (r.area || r.location || "").toLowerCase();
+          const matchesArea = !area || areaField.includes(area);
+          return matchesQuery && matchesArea;
+        });
+      }
+
+      searchEl.addEventListener("input", () => {
+        renderRestaurants(filterRestaurants());
+      });
+
+      qs("#areaSelect").addEventListener("change", () => {
+        renderRestaurants(filterRestaurants());
+      });
+
+      qs("#heroSearchBtn").addEventListener("click", () => {
+        renderRestaurants(filterRestaurants());
+        nearbyEl.scrollIntoView({ behavior: "smooth" });
+      });
+
+      qs("#openUnregBtn").addEventListener("click", () => {
+        notFoundEl.classList.add("hidden");
+        unregFormEl.classList.remove("hidden");
+      });
+
+      qs("#unregCancel").addEventListener("click", () => {
+        unregFormEl.classList.add("hidden");
+        nearbyEl.classList.remove("hidden");
+        searchEl.value = "";
+        qs("#areaSelect").value = "";
+        renderRestaurants(filterRestaurants());
+      });
+
+      qs("#unregSubmit").addEventListener("click", () => {
+        const name = qs("#unregName").value.trim();
+        const location = qs("#unregLocation").value.trim();
+        if (!name || !location) {
+          alert("Please enter restaurant name and location.");
+          return;
+        }
+        alert("Unregistered business report submitted. Reference #U001");
+        unregFormEl.classList.add("hidden");
+        nearbyEl.classList.remove("hidden");
+      });
+
+      qs("#backBtn").addEventListener("click", (e) => {
+        e.preventDefault();
+        showHomeView();
+      });
+
+      qs("#fileGrievanceBtn").addEventListener("click", () => {
+        const r = Store.get("selectedRestaurant");
+        if (!r) return;
+        const params = new URLSearchParams({
+          id: r.id || "",
+          name: r.name || "",
+          license: r.license || "",
+          location: r.location || "",
+          rating: String(r.rating || ""),
+        });
+        window.location.href = `rating.html?${params.toString()}`;
+      });
+
+      // Load restaurants: Firestore first (if ready), else mock data.
+      // Handles load order where firebase.js module may run before OR after
+      // this inline script.
+      function showFirestoreNotice(msg) {
+        const el = qs("#firestoreNotice");
+        if (!el) return;
+        if (msg) el.innerHTML = "⚠ " + msg;
+        el.classList.remove("hidden");
+      }
+
+      async function loadFromFirestore() {
+        const portal = window.Portal;
+        if (!portal) return;
+        if (!portal.isConfigured) {
+          showFirestoreNotice(
+            "Firebase is not configured. Edit frontend/shared/firebase.js → firebaseConfig with your project's keys."
+          );
+          return;
+        }
+        if (!portal.isFirebaseReady) {
+          showFirestoreNotice(
+            "Firebase configured but failed to initialise. Check browser console."
+          );
+          return;
+        }
+        try {
+          const list = await portal.fetchRestaurants();
+          if (!list) {
+            showFirestoreNotice(
+              "Firestore fetch failed. Check Firestore security rules permit public reads on the 'restaurants' collection."
+            );
+            return;
+          }
+          if (!list.length) {
+            showFirestoreNotice(
+              "Firestore connected, but the 'restaurants' collection is empty."
+            );
+            // Keep the mock list visible so the page isn't blank
+            return;
+          }
+          restaurants = list;
+          renderRestaurants(restaurants);
+          updateStats();
+        } catch (e) {
+          console.error("Restaurants load failed:", e);
+          showFirestoreNotice("Unexpected error — see browser console.");
+        }
+      }
+
+      function boot() {
+        renderRestaurants(restaurants);
+        updateStats();
+
+        if (window.Portal) {
+          loadFromFirestore();
+        } else {
+          window.addEventListener("portal:ready", loadFromFirestore, {
+            once: true,
+          });
+          // Fallback: if the module never loads (network/CDN), surface a notice
+          setTimeout(() => {
+            if (!window.Portal) {
+              showFirestoreNotice(
+                "Firebase module didn't load (check network / script path)."
+              );
+            }
+          }, 4000);
+        }
+      }
+      boot();
+    </script>
+  </body>
+</html>

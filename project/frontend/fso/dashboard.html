@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FSO Admin | Consumer Grievance Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div id="navbar"></div>
+
+    <main class="container">
+      <h1 class="page-title">Food Safety Officer — Admin Panel</h1>
+      <p class="subtitle">
+        Investigate consumer complaints across Shillong and take regulatory
+        action. All complaints in your jurisdiction are visible — even when
+        the FBO has not flagged them.
+      </p>
+
+      <!-- ========== LOGIN: Step 1 — FSO ID + phone ========== -->
+      <section id="loginStep">
+        <div class="card login-card">
+          <h3>🔐 FSO Sign In</h3>
+          <p class="muted" style="margin-top: 4px">
+            Enter your Officer credentials to access the admin panel.
+          </p>
+
+          <label class="label" for="fsoId">
+            🪪 FSO ID Number <span class="field-req">*</span>
+          </label>
+          <input
+            id="fsoId"
+            class="input"
+            type="text"
+            autocomplete="off"
+            placeholder="e.g. FSO-MEG-0042"
+          />
+
+          <label class="label" for="fsoPhone">
+            📞 Registered Phone Number <span class="field-req">*</span>
+          </label>
+          <input
+            id="fsoPhone"
+            class="input"
+            type="tel"
+            placeholder="+91 XXXXX XXXXX"
+          />
+
+          <button id="fsoSendOtp" class="btn block" style="margin-top: 16px">
+            🔑 Send OTP
+          </button>
+          <div id="fsoLoginErr" class="notice hidden" style="margin-top: 10px"></div>
+          <p class="muted" style="font-size: 12px; margin-top: 10px">
+            Demo mode — any 6 digits will verify. No live SMS sent.
+          </p>
+        </div>
+      </section>
+
+      <!-- ========== LOGIN: Step 2 — OTP ========== -->
+      <section id="otpStep" class="hidden">
+        <div class="card login-card">
+          <h3>Enter OTP</h3>
+          <p class="muted">
+            6-digit code sent to <strong id="fsoOtpPhone"></strong>.
+          </p>
+          <div class="otp-boxes" id="fsoOtpBoxes">
+            <input type="text" inputmode="numeric" maxlength="1" />
+            <input type="text" inputmode="numeric" maxlength="1" />
+            <input type="text" inputmode="numeric" maxlength="1" />
+            <input type="text" inputmode="numeric" maxlength="1" />
+            <input type="text" inputmode="numeric" maxlength="1" />
+            <input type="text" inputmode="numeric" maxlength="1" />
+          </div>
+          <button id="fsoVerify" class="btn block">✔ Verify OTP</button>
+          <div id="fsoOtpErr" class="notice hidden" style="margin-top: 10px"></div>
+          <p class="muted" style="text-align: center; margin-top: 10px">
+            <a href="#" id="fsoLoginBack">← Change details</a>
+          </p>
+        </div>
+      </section>
+
+      <!-- ========== Dashboard ========== -->
+      <section id="dashboardStep" class="hidden">
+        <div class="identity-bar">
+          <span class="identity-label">🏛 Signed In</span>
+          <span id="fsoBadge" class="identity-badge"></span>
+          <button id="fsoSignOut" class="btn small secondary" style="margin-left: auto">
+            ↩ Sign Out
+          </button>
+        </div>
+
+        <!-- Stats -->
+        <div class="stat-grid">
+          <div class="stat-card">
+            <span class="stat-icon">📄</span>
+            <div>
+              <div class="stat-label">Total Complaints</div>
+              <div class="stat-value" id="fsoTotal">0</div>
+              <div class="stat-hint">in Shillong</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <span class="stat-icon amber">📥</span>
+            <div>
+              <div class="stat-label">New</div>
+              <div class="stat-value" id="fsoNew">0</div>
+              <div class="stat-hint">awaiting triage</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <span class="stat-icon" style="background: #0c5460">🔎</span>
+            <div>
+              <div class="stat-label">Under Review</div>
+              <div class="stat-value" id="fsoReview">0</div>
+              <div class="stat-hint">inspections open</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <span class="stat-icon sage">✅</span>
+            <div>
+              <div class="stat-label">Resolved</div>
+              <div class="stat-value" id="fsoResolved">0</div>
+              <div class="stat-hint">closed</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <span class="stat-icon danger">🚨</span>
+            <div>
+              <div class="stat-label">Flagged by FBO</div>
+              <div class="stat-value" id="fsoFlagged">0</div>
+              <div class="stat-hint">priority review</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+          <button class="tab active" data-tab="complaints">
+            <span>📋</span> Complaints
+          </button>
+          <button class="tab" data-tab="fbo">
+            <span>🏢</span> FBO Database
+          </button>
+        </div>
+
+        <!-- Complaints tab -->
+        <section id="tab-complaints">
+          <div class="filter-row">
+            <button class="filter active" data-filter="all">🔲 All</button>
+            <button class="filter" data-filter="new">📥 New</button>
+            <button class="filter" data-filter="review">⏱ Under Review</button>
+            <button class="filter" data-filter="resolved">✅ Resolved</button>
+          </div>
+
+          <div id="complaintsList"></div>
+        </section>
+
+        <!-- FBO Database tab -->
+        <section id="tab-fbo" class="hidden">
+          <div class="section-row">
+            <h2 class="section-heading" style="margin: 0">
+              <span>🏢</span> Registered Food Businesses
+            </h2>
+            <div class="section-tools">
+              <span class="pill navy" id="fboCount"></span>
+            </div>
+          </div>
+
+          <!-- Search + Area filter -->
+          <div class="flex flex-wrap" style="gap: 12px; margin-bottom: 14px">
+            <div class="searchbar inline" style="flex: 1; min-width: 240px">
+              <span>🔍</span>
+              <input
+                id="fboSearch"
+                type="text"
+                placeholder="Search by restaurant name or license number"
+              />
+            </div>
+            <div class="area-filter">
+              <span>📍</span>
+              <label for="fboArea">Area</label>
+              <select id="fboArea">
+                <option value="">All areas</option>
+              </select>
+            </div>
+          </div>
+
+          <table class="table">
+            <thead>
+              <tr>
+                <th>License #</th>
+                <th>Name</th>
+                <th>Location</th>
+                <th>Complaints</th>
+                <th>Flagged</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="fboTable"></tbody>
+          </table>
+
+          <section id="fboDetail" class="hidden" style="margin-top: 24px">
+            <h3 id="fboDetailTitle" class="section-heading"></h3>
+            <div id="fboDetailComplaints"></div>
+            <button id="closeFboDetail" class="btn secondary small">
+              <span>✕</span> Close
+            </button>
+          </section>
+        </section>
+
+        <div class="spacer-lg"></div>
+      </section>
+    </main>
+
+    <script src="/static/script.js"></script>
+    <script type="module" src="/static/firebase.js"></script>
+    <script>
+      qs("#navbar").innerHTML = renderNavbar("");
+
+      const FSO_LOGIN_KEY = "fsoLoggedIn";
+      const FSO_ID_KEY = "fsoId";
+      const FSO_PHONE_KEY = "fsoPhone";
+
+      let restaurants = [];
+      let allComplaints = [];
+      let activeFilter = "all";
+      let unsubLive = null;
+
+      /* ========== Helpers ========== */
+      function complaintDate(c) {
+        if (c.createdAt && c.createdAt.toDate) return c.createdAt.toDate();
+        return new Date(c.createdAt || Date.now());
+      }
+      function dateString(c) {
+        return complaintDate(c).toISOString().slice(0, 10);
+      }
+      function statusEmoji(s) {
+        if (s === "Action Taken") return "✅";
+        if (s === "Under Review") return "🔎";
+        return "⏱";
+      }
+      function chipFor(c) {
+        const s = c.status || "Submitted";
+        const cls = {
+          Submitted: "chip pending",
+          Pending: "chip pending",
+          "Under Review": "chip review",
+          "Action Taken": "chip action",
+        }[s] || "chip";
+        return `<span class="${cls}">${statusEmoji(s)} ${s}</span>`;
+      }
+      function isNew(c) {
+        const s = c.status || "Submitted";
+        return s === "Submitted" || s === "Pending";
+      }
+
+      function photosBlock(c) {
+        const tiles = [];
+        if (c.evidencePhoto) {
+          tiles.push(
+            `<a class="photo-tile" href="${c.evidencePhoto}" target="_blank" rel="noopener">
+               <img src="${c.evidencePhoto}" alt="Evidence">
+             </a>`
+          );
+        }
+        if (c.billPhoto) {
+          tiles.push(
+            `<a class="photo-tile" href="${c.billPhoto}" target="_blank" rel="noopener">
+               <img src="${c.billPhoto}" alt="Bill">
+             </a>`
+          );
+        }
+        if (!tiles.length) {
+          tiles.push(
+            '<span class="photo-tile"><span class="photo-label">📷<br/>No photos</span></span>'
+          );
+        }
+        return `<div class="photo-grid">${tiles.join("")}</div>`;
+      }
+
+      function ratingBreakdown(c) {
+        if (!c.rating_cleanliness && !c.rating_food_freshness && !c.rating_staff_hygiene) {
+          return "";
+        }
+        return `
+          <div class="kv-grid" style="margin-top: 10px">
+            <div class="kv">
+              <span class="icon-circle sage">🏢</span>
+              <div>
+                <div class="kv-label">Premise</div>
+                <div class="kv-value">${c.rating_cleanliness || "—"} / 5</div>
+              </div>
+            </div>
+            <div class="kv">
+              <span class="icon-circle amber">🍽</span>
+              <div>
+                <div class="kv-label">Freshness</div>
+                <div class="kv-value">${c.rating_food_freshness || "—"} / 5</div>
+              </div>
+            </div>
+            <div class="kv">
+              <span class="icon-circle">🧤</span>
+              <div>
+                <div class="kv-label">Staff Hygiene</div>
+                <div class="kv-value">${c.rating_staff_hygiene || "—"} / 5</div>
+              </div>
+            </div>
+          </div>`;
+      }
+
+      function timelineStack(c) {
+        const items = [];
+        items.push(`<div><span class="muted-label">Submitted</span>${dateString(c)}</div>`);
+        if (c.fboReviewed) items.push(`<div><span class="muted-label">FBO Review</span>${c.fboReviewed}</div>`);
+        if (c.improvementUpdate) items.push(`<div><span class="muted-label">Improvement</span>${c.improvementUpdate}</div>`);
+        if (c.FSOAction) items.push(`<div><span class="muted-label">FSO Action</span>${c.FSOAction}</div>`);
+        if (c.inspectionNote) items.push(`<div><span class="muted-label">Inspection</span>${c.inspectionNote}</div>`);
+        if (c.warningNote) items.push(`<div><span class="muted-label">Warning</span>${c.warningNote}</div>`);
+        if (c.officialNote) items.push(`<div><span class="muted-label">Official Note</span>${c.officialNote}</div>`);
+        return `<div class="meta-stack">${items.join("")}</div>`;
+      }
+
+      function headIcon(c) {
+        if (c.flaggedByFBO) return '<span class="icon-circle danger lg">🚨</span>';
+        if (c.status === "Action Taken") return '<span class="icon-circle sage lg">✅</span>';
+        if (c.status === "Under Review")
+          return '<span class="icon-circle lg" style="background: #d1ecf1; color: #0c5460">🔎</span>';
+        return '<span class="icon-circle amber lg">📥</span>';
+      }
+
+      function flaggedBanner(c) {
+        if (!c.flaggedByFBO) return "";
+        return `
+          <div class="flagged-banner">
+            <span>🚨</span> FLAGGED BY FBO
+            ${c.flagReason ? `<span class="reason">— "${c.flagReason}"</span>` : ""}
+          </div>`;
+      }
+
+      function complaintCard(c) {
+        const positive = (Number(c.overallRating) || 0) >= 3;
+        const isResolved = c.status === "Action Taken";
+        const phoneDigits = String(c.consumerPhone || "").replace(/[^\d+]/g, "");
+
+        const actions = isResolved
+          ? `<div class="notice sage" style="margin-top: 10px">
+               <span>✅</span> Resolved.${c.officialNote ? ` Note: "${c.officialNote}"` : ""}
+             </div>`
+          : positive
+          ? `<div class="notice navy" style="margin-top: 10px">
+               <span>👍</span> Positive feedback — review only, no action required.
+             </div>`
+          : `
+            <div class="flex flex-wrap" style="gap: 8px; margin-top: 12px">
+              <button class="btn small" data-act="inspection">
+                <span>🔎</span> Assign Inspection
+              </button>
+              <button class="btn small navy" data-act="warning">
+                <span>📣</span> Send Warning
+              </button>
+              <button class="btn small secondary" data-act="contactFbo">
+                <span>🏢</span> Contact FBO
+              </button>
+              <button class="btn small secondary" data-act="contactConsumer">
+                <span>📞</span> Contact Consumer
+              </button>
+              <button class="btn small sage" data-act="resolve">
+                <span>✅</span> Mark Resolved
+              </button>
+            </div>
+            <div class="action-slot"></div>`;
+
+        return `
+          <div class="card" data-id="${c.complaintId || ""}">
+            ${flaggedBanner(c)}
+            <div class="card-row">
+              <div class="flex" style="align-items: flex-start; gap: 14px">
+                ${headIcon(c)}
+                <div>
+                  <h3 style="margin: 0 0 4px">${c.restaurantName || "—"}</h3>
+                  <div class="meta"><span>🛡</span> FSSAI: ${c.restaurantLicense || "—"}</div>
+                  <div class="meta" style="margin-top: 4px"><span>📄</span> ${c.complaintId || "—"}</div>
+                  <div class="meta" style="margin-top: 4px"><span>📍</span> ${c.restaurantLocation || "—"}</div>
+                  <div class="meta" style="margin-top: 4px"><span>⏱</span> Filed: ${dateString(c)}</div>
+                </div>
+              </div>
+              <div style="text-align: right">
+                <span class="rating-badge">
+                  <span>⭐</span> ${Number(c.overallRating || 0).toFixed(1)} / 5
+                </span>
+                <div style="margin-top: 8px">${chipFor(c)}</div>
+              </div>
+            </div>
+
+            ${c.comment ? `<p style="margin: 12px 0 4px">${c.comment}</p>` : ""}
+            ${ratingBreakdown(c)}
+
+            <h4 class="section-heading" style="margin: 14px 0 4px; font-size: 14px">
+              <span>📷</span> Evidence
+            </h4>
+            ${photosBlock(c)}
+
+            <hr class="divider-dashed" />
+            <div class="kv-grid" style="margin-top: 6px">
+              <div class="kv">
+                <span class="icon-circle">👤</span>
+                <div>
+                  <div class="kv-label">Consumer</div>
+                  <div class="kv-value">${c.consumerName || "—"}</div>
+                </div>
+              </div>
+              <div class="kv">
+                <span class="icon-circle sage">📞</span>
+                <div>
+                  <div class="kv-label">Phone</div>
+                  <div class="kv-value">
+                    <a href="tel:${phoneDigits}">${c.consumerPhone || "—"}</a>
+                  </div>
+                </div>
+              </div>
+              <div class="kv">
+                <span class="icon-circle amber">🏛</span>
+                <div>
+                  <div class="kv-label">Assigned FSO</div>
+                  <div class="kv-value">${c.assignedFSO || "—"}</div>
+                </div>
+              </div>
+            </div>
+
+            ${timelineStack(c)}
+            ${actions}
+          </div>`;
+      }
+
+      /* ========== Filtering & stats ========== */
+      function applyFilter(list) {
+        if (activeFilter === "all") return list;
+        if (activeFilter === "new") return list.filter(isNew);
+        if (activeFilter === "review")
+          return list.filter((c) => c.status === "Under Review");
+        if (activeFilter === "resolved")
+          return list.filter((c) => c.status === "Action Taken");
+        return list;
+      }
+
+      function updateStats() {
+        qs("#fsoTotal").textContent = allComplaints.length;
+        qs("#fsoNew").textContent = allComplaints.filter(isNew).length;
+        qs("#fsoReview").textContent = allComplaints.filter(
+          (c) => c.status === "Under Review"
+        ).length;
+        qs("#fsoResolved").textContent = allComplaints.filter(
+          (c) => c.status === "Action Taken"
+        ).length;
+        qs("#fsoFlagged").textContent = allComplaints.filter(
+          (c) => c.flaggedByFBO
+        ).length;
+      }
+
+      function renderComplaints() {
+        const listEl = qs("#complaintsList");
+        const filtered = applyFilter(allComplaints);
+        if (!filtered.length) {
+          listEl.innerHTML =
+            '<div class="card"><p class="muted">No complaints for this filter.</p></div>';
+          return;
+        }
+        listEl.innerHTML = filtered.map(complaintCard).join("");
+      }
+
+      /* ========== FBO Database tab ========== */
+      function complaintsForLicense(lic) {
+        return allComplaints.filter((c) => c.restaurantLicense === lic);
+      }
+
+      function renderFboDatabase() {
+        const search = (qs("#fboSearch")?.value || "").trim().toLowerCase();
+        const area = qs("#fboArea")?.value || "";
+        const filtered = restaurants.filter((r) => {
+          const matchesQuery =
+            !search ||
+            (r.name || "").toLowerCase().includes(search) ||
+            (r.license || "").toLowerCase().includes(search);
+          const areaField = (r.area || r.location || "").toLowerCase();
+          const matchesArea = !area || areaField.includes(area.toLowerCase());
+          return matchesQuery && matchesArea;
+        });
+
+        const rows = filtered.map((r) => {
+          const list = complaintsForLicense(r.license);
+          const flaggedCount = list.filter((c) => c.flaggedByFBO).length;
+          const sev =
+            list.length === 0
+              ? '<span class="pill sage">✅ Clean</span>'
+              : list.length <= 2
+              ? `<span class="pill amber">⚠ ${list.length}</span>`
+              : `<span class="chip flag">🔥 ${list.length}</span>`;
+          return `
+            <tr>
+              <td><span class="flex" style="gap: 6px">🛡 ${r.license}</span></td>
+              <td><span class="flex" style="gap: 6px">🏢 ${r.name}</span></td>
+              <td><span class="flex" style="gap: 6px">📍 ${r.location || "—"}</span></td>
+              <td>${sev}</td>
+              <td>${
+                flaggedCount
+                  ? `<span class="pill amber">🚨 ${flaggedCount}</span>`
+                  : '<span class="muted">—</span>'
+              }</td>
+              <td>
+                <button class="btn small secondary" data-license="${r.license}">
+                  <span>👁</span> View
+                </button>
+              </td>
+            </tr>`;
+        });
+
+        qs("#fboTable").innerHTML = rows.join("") ||
+          '<tr><td colspan="6" class="muted" style="padding: 14px">No restaurants match your search.</td></tr>';
+        qs("#fboCount").innerHTML = `🔲 ${filtered.length} of ${restaurants.length}`;
+      }
+
+      qs("#fboTable").addEventListener("click", (e) => {
+        const btn = e.target.closest("[data-license]");
+        if (!btn) return;
+        const lic = btn.dataset.license;
+        const r = restaurants.find((x) => x.license === lic);
+        const items = complaintsForLicense(lic);
+        qs("#fboDetail").classList.remove("hidden");
+        qs("#fboDetailTitle").innerHTML =
+          `🏢 Complaints for ${r ? r.name : "—"} <span class="muted" style="font-size: 13px; margin-left: 6px">${lic}</span>`;
+        qs("#fboDetailComplaints").innerHTML = items.length
+          ? items.map(complaintCard).join("")
+          : '<div class="card"><p class="muted">No complaints.</p></div>';
+        qs("#fboDetail").scrollIntoView({ behavior: "smooth" });
+      });
+
+      qs("#closeFboDetail").addEventListener("click", () => {
+        qs("#fboDetail").classList.add("hidden");
+      });
+
+      /* ========== Tabs + filters ========== */
+      qsa(".tabs .tab").forEach((t) => {
+        t.addEventListener("click", () => {
+          qsa(".tabs .tab").forEach((x) => x.classList.remove("active"));
+          t.classList.add("active");
+          const name = t.dataset.tab;
+          qs("#tab-complaints").classList.toggle("hidden", name !== "complaints");
+          qs("#tab-fbo").classList.toggle("hidden", name !== "fbo");
+        });
+      });
+      if (location.hash === "#fbo") qs('.tab[data-tab="fbo"]').click();
+
+      qsa(".filter-row .filter").forEach((b) => {
+        b.addEventListener("click", () => {
+          qsa(".filter-row .filter").forEach((x) => x.classList.remove("active"));
+          b.classList.add("active");
+          activeFilter = b.dataset.filter;
+          renderComplaints();
+        });
+      });
+
+      ["input", "change"].forEach((ev) => {
+        qs("#fboSearch").addEventListener(ev, renderFboDatabase);
+        qs("#fboArea").addEventListener(ev, renderFboDatabase);
+      });
+
+      /* ========== Action handling (FSO) ========== */
+      const ACTIONS = {
+        inspection: { title: "Assign inspection", fn: "assignInspection", cta: "Assign", ph: "Inspection instructions…" },
+        warning:    { title: "Send warning to FBO", fn: "sendWarning", cta: "Send Warning", ph: "Warning details…" },
+        resolve:    { title: "Mark resolved", fn: "markResolved", cta: "Resolve", ph: "Resolution note (will be made public)…" },
+        contactConsumer: { title: "Contact consumer", fn: "contactConsumer", cta: "Log Contact", ph: "", noNote: true },
+        contactFbo: { title: "Contact FBO", fn: "contactFbo", cta: "Log Contact", ph: "", noNote: true },
+      };
+
+      async function onComplaintsClick(e) {
+        const card = e.target.closest(".card");
+        if (!card) return;
+        const id = card.dataset.id;
+        if (!id) return;
+
+        const actBtn = e.target.closest("[data-act]");
+        if (actBtn) {
+          const action = ACTIONS[actBtn.dataset.act];
+          if (!action) return;
+          const slot = card.querySelector(".action-slot");
+
+          if (actBtn.dataset.act === "contactConsumer") {
+            const c = allComplaints.find((x) => x.complaintId === id);
+            if (c && c.consumerPhone) {
+              window.location.href = "tel:" + c.consumerPhone.replace(/[^\d+]/g, "");
+            }
+          }
+
+          if (action.noNote) {
+            actBtn.disabled = true;
+            actBtn.textContent = "Working…";
+            await window.Portal.fso[action.fn](id);
+            const c = allComplaints.find((x) => x.complaintId === id);
+            if (c) {
+              if (action.fn === "contactConsumer") c.FSOAction = "Consumer Contacted";
+              if (action.fn === "contactFbo") c.FSOAction = "FBO Contacted";
+            }
+            updateStats();
+            renderComplaints();
+            return;
+          }
+
+          slot.innerHTML = `
+            <div class="action-panel">
+              <h4>${action.title}</h4>
+              <textarea class="textarea note-input" placeholder="${action.ph}"></textarea>
+              <div class="actions">
+                <button class="btn small" data-sub="${actBtn.dataset.act}">${action.cta}</button>
+                <button class="btn small secondary" data-sub="cancel">Cancel</button>
+              </div>
+            </div>`;
+          return;
+        }
+
+        const subBtn = e.target.closest("[data-sub]");
+        if (!subBtn) return;
+        if (subBtn.dataset.sub === "cancel") {
+          card.querySelector(".action-slot").innerHTML = "";
+          return;
+        }
+        const action = ACTIONS[subBtn.dataset.sub];
+        if (!action) return;
+        const note = (card.querySelector(".note-input")?.value || "").trim();
+        subBtn.disabled = true;
+        subBtn.textContent = "Submitting…";
+        await window.Portal.fso[action.fn](id, note);
+        const c = allComplaints.find((x) => x.complaintId === id);
+        if (c) {
+          if (action.fn === "assignInspection") {
+            c.FSOAction = "Inspection Assigned";
+            c.inspectionNote = note;
+            c.status = "Under Review";
+          } else if (action.fn === "sendWarning") {
+            c.FSOAction = "Warning Issued";
+            c.warningNote = note;
+          } else if (action.fn === "markResolved") {
+            c.status = "Action Taken";
+            c.FSOAction = "Resolved";
+            c.officialNote = note;
+          }
+        }
+        updateStats();
+        renderComplaints();
+      }
+
+      qs("#complaintsList").addEventListener("click", onComplaintsClick);
+      qs("#fboDetailComplaints").addEventListener("click", onComplaintsClick);
+
+      /* ========== LOGIN ========== */
+      function showLoginErr(m) {
+        const el = qs("#fsoLoginErr");
+        el.innerHTML = "⚠ " + m; el.classList.remove("hidden");
+      }
+      function hideLoginErr() { qs("#fsoLoginErr").classList.add("hidden"); }
+      function showOtpErr(m) {
+        const el = qs("#fsoOtpErr");
+        el.innerHTML = "⚠ " + m; el.classList.remove("hidden");
+      }
+      function hideOtpErr() { qs("#fsoOtpErr").classList.add("hidden"); }
+
+      qs("#fsoSendOtp").addEventListener("click", () => {
+        hideLoginErr();
+        const fid = qs("#fsoId").value.trim();
+        const phone = qs("#fsoPhone").value.trim();
+        if (!fid) { showLoginErr("Please enter your FSO ID."); return; }
+        if (!/^\+?\d{10,13}$/.test(phone.replace(/\s|-/g, ""))) {
+          showLoginErr("Please enter a valid phone number."); return;
+        }
+        sessionStorage.setItem(FSO_ID_KEY, fid);
+        sessionStorage.setItem(FSO_PHONE_KEY, phone);
+        qs("#fsoOtpPhone").textContent = phone;
+        qs("#loginStep").classList.add("hidden");
+        qs("#otpStep").classList.remove("hidden");
+      });
+
+      wireOtpBoxes("#fsoOtpBoxes");
+      qs("#fsoVerify").addEventListener("click", () => {
+        hideOtpErr();
+        const code = getOtpValue("#fsoOtpBoxes");
+        if (code.length !== 6) {
+          showOtpErr("Please enter all 6 digits.");
+          return;
+        }
+        // Dummy verification
+        sessionStorage.setItem(FSO_LOGIN_KEY, "1");
+        enterDashboard();
+      });
+
+      qs("#fsoLoginBack").addEventListener("click", (e) => {
+        e.preventDefault();
+        qs("#otpStep").classList.add("hidden");
+        qs("#loginStep").classList.remove("hidden");
+      });
+
+      qs("#fsoSignOut").addEventListener("click", () => {
+        if (unsubLive) { try { unsubLive(); } catch (_) {} unsubLive = null; }
+        sessionStorage.removeItem(FSO_LOGIN_KEY);
+        sessionStorage.removeItem(FSO_ID_KEY);
+        sessionStorage.removeItem(FSO_PHONE_KEY);
+        location.reload();
+      });
+
+      function refreshAll() {
+        updateStats();
+        renderComplaints();
+        renderFboDatabase();
+      }
+
+      function enterDashboard() {
+        qs("#otpStep").classList.add("hidden");
+        qs("#loginStep").classList.add("hidden");
+        qs("#dashboardStep").classList.remove("hidden");
+        const fid = sessionStorage.getItem(FSO_ID_KEY) || "FSO-MEG-0042";
+        const phone = sessionStorage.getItem(FSO_PHONE_KEY) || "";
+        qs("#fsoBadge").innerHTML = `🪪 ${fid}${phone ? " · 📞 " + phone : ""}`;
+
+        if (window.Portal && window.Portal.subscribeAllComplaints) {
+          unsubLive = window.Portal.subscribeAllComplaints((list) => {
+            allComplaints = Array.isArray(list) ? list : [];
+            refreshAll();
+          });
+        } else if (window.Portal && window.Portal.fetchAllComplaints) {
+          window.Portal.fetchAllComplaints().then((list) => {
+            allComplaints = Array.isArray(list) ? list : [];
+            refreshAll();
+          });
+        }
+      }
+
+      /* ========== Bootstrap ========== */
+      async function boot() {
+        if (window.Portal && window.Portal.fetchRestaurants) {
+          const r = await window.Portal.fetchRestaurants();
+          restaurants = (r && r.length ? r : MOCK_RESTAURANTS);
+        } else {
+          restaurants = MOCK_RESTAURANTS;
+        }
+
+        // Populate area filter
+        const sel = qs("#fboArea");
+        if (typeof SHILLONG_AREAS !== "undefined") {
+          SHILLONG_AREAS.forEach((a) => {
+            const o = document.createElement("option");
+            o.value = a;
+            o.textContent = a;
+            sel.appendChild(o);
+          });
+        }
+
+        // Auto-restore login session
+        if (sessionStorage.getItem(FSO_LOGIN_KEY)) {
+          enterDashboard();
+        }
+      }
+
+      if (window.Portal) boot();
+      else window.addEventListener("portal:ready", boot, { once: true });
+    </script>
+  </body>
+</html>

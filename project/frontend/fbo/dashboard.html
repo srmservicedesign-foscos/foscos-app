@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FBO Dashboard | Consumer Grievance Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div id="navbar"></div>
+
+    <main class="container">
+      <h1 class="page-title">Food Business Operator Dashboard</h1>
+      <p class="subtitle">
+        Sign in with your registered restaurant details to review verified
+        customer feedback. Consumer identity is protected.
+      </p>
+
+      <!-- ========== LOGIN: Step 1 — Restaurant + phone ========== -->
+      <section id="loginStep">
+        <div class="card login-card">
+          <h3>🔐 FBO Sign In</h3>
+          <p class="muted" style="margin-top: 4px">
+            Enter your FSSAI license number or start typing your restaurant
+            name. Suggestions appear from the registered FBO database.
+          </p>
+
+          <label class="label" for="fboQuery">
+            🏢 Restaurant License Number or Name
+            <span class="field-req">*</span>
+          </label>
+          <div class="autocomplete-wrap">
+            <input
+              id="fboQuery"
+              class="input"
+              type="text"
+              autocomplete="off"
+              placeholder="e.g. 10112345600123 or Cafe Shillong"
+            />
+            <div id="fboSuggest" class="autocomplete-list hidden"></div>
+          </div>
+          <div id="fboPicked" class="pill sage hidden" style="margin-top: 8px"></div>
+
+          <label class="label" for="fboPhone">
+            📞 Registered Mobile Number <span class="field-req">*</span>
+          </label>
+          <input
+            id="fboPhone"
+            class="input"
+            type="tel"
+            placeholder="+91 XXXXX XXXXX"
+          />
+
+          <button id="fboSendOtp" class="btn block" style="margin-top: 16px">
+            🔑 Send OTP
+          </button>
+          <div id="fboLoginErr" class="notice hidden" style="margin-top: 10px"></div>
+          <p class="muted" style="font-size: 12px; margin-top: 10px">
+            Demo mode — any 6 digits will verify. No live SMS sent.
+          </p>
+        </div>
+      </section>
+
+      <!-- ========== LOGIN: Step 2 — OTP ========== -->
+      <section id="otpStep" class="hidden">
+        <div class="card login-card">
+          <h3>Enter OTP</h3>
+          <p class="muted">
+            6-digit code sent to <strong id="fboOtpPhone"></strong>.
+          </p>
+          <div class="otp-boxes" id="fboOtpBoxes">
+            <input type="text" inputmode="numeric" maxlength="1" />
+            <input type="text" inputmode="numeric" maxlength="1" />
+            <input type="text" inputmode="numeric" maxlength="1" />
+            <input type="text" inputmode="numeric" maxlength="1" />
+            <input type="text" inputmode="numeric" maxlength="1" />
+            <input type="text" inputmode="numeric" maxlength="1" />
+          </div>
+          <button id="fboVerify" class="btn block">✔ Verify OTP</button>
+          <div id="fboOtpErr" class="notice hidden" style="margin-top: 10px"></div>
+          <p class="muted" style="text-align: center; margin-top: 10px">
+            <a href="#" id="fboLoginBack">← Change details</a>
+          </p>
+        </div>
+      </section>
+
+      <!-- ========== Dashboard ========== -->
+      <section id="dashboardStep" class="hidden">
+        <div class="identity-bar">
+          <span class="identity-label">🏢 Signed In</span>
+          <span id="identityBadge" class="identity-badge"></span>
+          <button id="fboSignOut" class="btn small secondary" style="margin-left: auto">
+            ↩ Sign Out
+          </button>
+        </div>
+
+        <!-- Stats -->
+        <div class="stat-grid">
+          <div class="stat-card">
+            <span class="stat-icon">💬</span>
+            <div>
+              <div class="stat-label">Total Feedback</div>
+              <div class="stat-value" id="fbTotal">0</div>
+              <div class="stat-hint">all time</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <span class="stat-icon sage">👍</span>
+            <div>
+              <div class="stat-label">Positive</div>
+              <div class="stat-value" id="fbGood">0</div>
+              <div class="stat-hint">rating ≥ 3</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <span class="stat-icon amber">⏱</span>
+            <div>
+              <div class="stat-label">Under Review</div>
+              <div class="stat-value" id="fbReview">0</div>
+              <div class="stat-hint">FSO investigating</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <span class="stat-icon danger">🚨</span>
+            <div>
+              <div class="stat-label">Flagged by Me</div>
+              <div class="stat-value" id="fbFlag">0</div>
+              <div class="stat-hint">disputed</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="notice navy">
+          <span>🔒</span>
+          Consumer names and phone numbers are withheld to ensure confidential
+          reporting.
+        </div>
+
+        <!-- Filter tabs (status) -->
+        <div class="filter-row" style="margin-top: 14px">
+          <button class="filter active" data-filter="all">🔲 All</button>
+          <button class="filter" data-filter="new">📥 New</button>
+          <button class="filter" data-filter="flaggedByMe">🚨 Flagged by Me</button>
+          <button class="filter" data-filter="reviewByFso">⏱ Under Review by FSO</button>
+          <button class="filter" data-filter="resolved">✅ Resolved</button>
+          <button class="filter" data-filter="positive">👍 Positive Feedback</button>
+        </div>
+
+        <!-- Date filter row (applies to ALL tabs) -->
+        <div class="date-row">
+          <span class="date-label">⏱ Range</span>
+          <button class="date-chip active" data-days="all">All time</button>
+          <button class="date-chip" data-days="2">Last 2 days</button>
+          <button class="date-chip" data-days="7">Last week</button>
+          <button class="date-chip" data-days="30">Last 30 days</button>
+        </div>
+
+        <div id="feedbackList"></div>
+        <div class="spacer-lg"></div>
+      </section>
+    </main>
+
+    <script src="/static/script.js"></script>
+    <script type="module" src="/static/firebase.js"></script>
+    <script>
+      qs("#navbar").innerHTML = renderNavbar("");
+
+      const FBO_LICENSE_KEY = "fboSelectedLicense";
+      const FBO_LOGIN_KEY = "fboLoggedIn";
+
+      let restaurants = [];
+      let pickedRestaurant = null;
+      let complaints = [];
+      let activeFilter = "all";
+      let activeDays = "all";
+      let unsubLive = null;
+
+      /* ---------- Helpers (display) ---------- */
+      function starsOf(n) { return renderStars(Number(n) || 0); }
+
+      function statusEmoji(s) {
+        if (s === "Action Taken") return "✅";
+        if (s === "Under Review") return "🔎";
+        return "⏱";
+      }
+
+      function chipFor(c) {
+        const s = c.status || "Submitted";
+        const cls = {
+          Submitted: "chip pending",
+          Pending: "chip pending",
+          "Under Review": "chip review",
+          "Action Taken": "chip action",
+        }[s] || "chip";
+        return `<span class="${cls}">${statusEmoji(s)} ${s}</span>`;
+      }
+
+      function complaintDate(c) {
+        if (c.createdAt && c.createdAt.toDate) return c.createdAt.toDate();
+        return new Date(c.createdAt || Date.now());
+      }
+
+      function complaintDateString(c) {
+        return complaintDate(c).toISOString().slice(0, 10);
+      }
+
+      function isToday(c) {
+        const d = complaintDate(c);
+        const t = new Date();
+        return (
+          d.getFullYear() === t.getFullYear() &&
+          d.getMonth() === t.getMonth() &&
+          d.getDate() === t.getDate()
+        );
+      }
+
+      function withinDays(c, days) {
+        if (days === "all") return true;
+        const ms = Number(days) * 24 * 60 * 60 * 1000;
+        return Date.now() - complaintDate(c).getTime() <= ms;
+      }
+
+      function statusKind(c) {
+        if (c.flaggedByFBO) return "flaggedByMe";
+        if (c.status === "Action Taken" || c.fboReviewed === "completed") return "resolved";
+        if (c.status === "Under Review") return "reviewByFso";
+        if ((Number(c.overallRating) || 0) >= 3) return "positive";
+        return "new";
+      }
+
+      function photosBlock(c) {
+        const tiles = [];
+        if (c.evidencePhoto) {
+          tiles.push(
+            `<a class="photo-tile" href="${c.evidencePhoto}" target="_blank" rel="noopener">
+               <img src="${c.evidencePhoto}" alt="Evidence">
+             </a>`
+          );
+        }
+        if (c.billPhoto) {
+          tiles.push(
+            `<a class="photo-tile" href="${c.billPhoto}" target="_blank" rel="noopener">
+               <img src="${c.billPhoto}" alt="Bill">
+             </a>`
+          );
+        }
+        if (!tiles.length) {
+          tiles.push(
+            '<span class="photo-tile"><span class="photo-label">📷<br/>No photos</span></span>'
+          );
+        }
+        return `<div class="photo-grid">${tiles.join("")}</div>`;
+      }
+
+      function ratingBreakdown(c) {
+        if (!c.rating_cleanliness && !c.rating_food_freshness && !c.rating_staff_hygiene) {
+          return "";
+        }
+        return `
+          <div class="kv-grid" style="margin-top: 10px">
+            <div class="kv">
+              <span class="icon-circle sage">🏢</span>
+              <div>
+                <div class="kv-label">Premise</div>
+                <div class="kv-value">${c.rating_cleanliness || "—"} / 5</div>
+              </div>
+            </div>
+            <div class="kv">
+              <span class="icon-circle amber">🍽</span>
+              <div>
+                <div class="kv-label">Freshness</div>
+                <div class="kv-value">${c.rating_food_freshness || "—"} / 5</div>
+              </div>
+            </div>
+            <div class="kv">
+              <span class="icon-circle">🧤</span>
+              <div>
+                <div class="kv-label">Hygiene</div>
+                <div class="kv-value">${c.rating_staff_hygiene || "—"} / 5</div>
+              </div>
+            </div>
+          </div>`;
+      }
+
+      function timelineStack(c) {
+        const items = [];
+        items.push(`<div><span class="muted-label">Submitted</span>${complaintDateString(c)}</div>`);
+        if (c.fboReviewed) items.push(`<div><span class="muted-label">FBO Review</span>${c.fboReviewed}</div>`);
+        if (c.improvementUpdate) items.push(`<div><span class="muted-label">Improvement</span>${c.improvementUpdate}</div>`);
+        if (c.FSOAction) items.push(`<div><span class="muted-label">FSO Action</span>${c.FSOAction}</div>`);
+        if (c.flaggedByFBO) items.push(`<div><span class="muted-label">Flagged by Me</span>Awaiting FSO review</div>`);
+        return `<div class="meta-stack">${items.join("")}</div>`;
+      }
+
+      function headIcon(c) {
+        const kind = statusKind(c);
+        if (kind === "resolved") return '<span class="icon-circle sage lg">✅</span>';
+        if (kind === "flaggedByMe")  return '<span class="icon-circle danger lg">🚨</span>';
+        if (kind === "positive") return '<span class="icon-circle sage lg">👍</span>';
+        if (kind === "reviewByFso")   return '<span class="icon-circle amber lg">🔎</span>';
+        return '<span class="icon-circle amber lg">📥</span>';
+      }
+
+      function actionPanel(c) {
+        const positive = (Number(c.overallRating) || 0) >= 3;
+        const kind = statusKind(c);
+        const resolved = kind === "resolved";
+        const flagged = kind === "flaggedByMe";
+
+        if (resolved) {
+          return `
+            <div class="notice sage" style="margin-top: 10px">
+              <span>✅</span> Resolved.${c.improvementUpdate ? ` Note: "${c.improvementUpdate}"` : ""}
+            </div>`;
+        }
+
+        if (positive) {
+          return `
+            <div class="flex flex-wrap" style="gap: 8px; margin-top: 10px">
+              <button class="btn small" data-act="thank">
+                <span>💌</span> Say Thank You
+              </button>
+              ${c.thankYouSent ? '<span class="pill sage">✅ Thank you sent</span>' : ""}
+            </div>`;
+        }
+
+        // BAD feedback — only the three actions specified
+        return `
+          <div class="flex flex-wrap" style="gap: 8px; margin-top: 10px">
+            <button class="btn small" data-act="genuine">
+              <span>🛡</span> Mark Genuine
+            </button>
+            <button class="btn small secondary" data-act="improve">
+              <span>📝</span> Add Improvement Update
+            </button>
+            <button class="btn small danger" data-act="flag" ${flagged ? "disabled" : ""}>
+              <span>🚩</span> ${flagged ? "Flagged by Me" : "Flag Complaint"}
+            </button>
+          </div>
+          <div class="action-slot"></div>`;
+      }
+
+      function complaintCard(c) {
+        return `
+          <div class="card" data-id="${c.complaintId || ""}" data-kind="${statusKind(c)}">
+            <div class="card-row">
+              <div class="flex" style="align-items: flex-start; gap: 14px">
+                ${headIcon(c)}
+                <div>
+                  <div class="flex" style="gap: 10px; margin-bottom: 6px; flex-wrap: wrap">
+                    <span class="stars">${starsOf(c.overallRating)}</span>
+                    <span class="rating-badge">
+                      <span>⭐</span> ${Number(c.overallRating || 0).toFixed(1)} / 5
+                    </span>
+                  </div>
+                  <h3 style="margin: 0 0 4px">${c.restaurantName || "—"}</h3>
+                  <div class="meta"><span>📄</span> ${c.complaintId || "—"}</div>
+                  <div class="meta" style="margin-top: 4px"><span>⏱</span> Filed: ${complaintDateString(c)}</div>
+                  <div class="meta" style="margin-top: 4px"><span>🛡</span> Anonymous consumer</div>
+                </div>
+              </div>
+              <div style="text-align: right">
+                ${chipFor(c)}
+                ${c.flaggedByFBO ? '<div style="margin-top: 6px"><span class="pill amber">🚨 Flagged by Me</span></div>' : ""}
+              </div>
+            </div>
+
+            ${c.comment ? `<p style="margin: 12px 0 4px">${c.comment}</p>` : ""}
+            ${ratingBreakdown(c)}
+
+            <h4 class="section-heading" style="margin: 14px 0 4px; font-size: 14px">
+              <span>📷</span> Evidence
+            </h4>
+            ${photosBlock(c)}
+
+            <hr class="divider-dashed" />
+            ${timelineStack(c)}
+            ${actionPanel(c)}
+          </div>`;
+      }
+
+      /* ---------- Stats + filtering ---------- */
+      function updateStats() {
+        const inRange = complaints.filter((c) => withinDays(c, activeDays));
+        qs("#fbTotal").textContent = inRange.length;
+        qs("#fbGood").textContent = inRange.filter(
+          (c) => (Number(c.overallRating) || 0) >= 3
+        ).length;
+        qs("#fbReview").textContent = inRange.filter(
+          (c) => statusKind(c) === "reviewByFso"
+        ).length;
+        qs("#fbFlag").textContent = inRange.filter((c) => c.flaggedByFBO).length;
+      }
+
+      function applyFilter(list) {
+        let f = list.filter((c) => withinDays(c, activeDays));
+        if (activeFilter === "all") return f;
+        if (activeFilter === "new") return f.filter(isToday);
+        if (activeFilter === "positive")
+          return f.filter((c) => (Number(c.overallRating) || 0) >= 3);
+        return f.filter((c) => statusKind(c) === activeFilter);
+      }
+
+      function render() {
+        const listEl = qs("#feedbackList");
+        const filtered = applyFilter(complaints);
+        if (!filtered.length) {
+          listEl.innerHTML =
+            '<div class="card"><p class="muted">No complaints match this filter.</p></div>';
+          return;
+        }
+        listEl.innerHTML = filtered.map(complaintCard).join("");
+      }
+
+      /* ---------- Action handling ---------- */
+      async function onCardAction(e) {
+        const btn = e.target.closest("[data-act]");
+        if (!btn) return;
+        const card = e.target.closest(".card");
+        if (!card) return;
+        const id = card.dataset.id;
+        if (!id || !window.Portal || !window.Portal.fbo) return;
+        const act = btn.dataset.act;
+        const slot = card.querySelector(".action-slot");
+
+        if (act === "thank") {
+          btn.disabled = true; btn.textContent = "Sending…";
+          await window.Portal.fbo.sendThankYou(id);
+          const c = complaints.find((x) => x.complaintId === id);
+          if (c) c.thankYouSent = true;
+          render();
+          return;
+        }
+
+        if (act === "genuine") {
+          btn.disabled = true;
+          await window.Portal.fbo.markGenuine(id);
+          const c = complaints.find((x) => x.complaintId === id);
+          if (c) { c.fboReviewed = "genuine"; c.status = "Under Review"; }
+          updateStats(); render();
+          return;
+        }
+
+        if (act === "improve") {
+          slot.innerHTML = `
+            <div class="action-panel">
+              <h4>📝 Add improvement update</h4>
+              <textarea class="textarea note-input" placeholder="What corrective action are you taking?"></textarea>
+              <div class="actions">
+                <button class="btn small" data-sub="improve-submit">Submit Update</button>
+                <button class="btn small secondary" data-sub="cancel">Cancel</button>
+              </div>
+            </div>`;
+          return;
+        }
+
+        if (act === "flag") {
+          if (!confirm("Flag this complaint as potentially fake?")) return;
+          slot.innerHTML = `
+            <div class="action-panel">
+              <h4>🚩 Flag complaint</h4>
+              <textarea class="textarea note-input" placeholder="Briefly explain why you believe this complaint is incorrect…"></textarea>
+              <div class="actions">
+                <button class="btn small danger" data-sub="flag-submit">Flag & Notify FSO</button>
+                <button class="btn small secondary" data-sub="cancel">Cancel</button>
+              </div>
+            </div>`;
+          return;
+        }
+      }
+
+      async function onPanelAction(e) {
+        const btn = e.target.closest("[data-sub]");
+        if (!btn) return;
+        const card = e.target.closest(".card");
+        const id = card.dataset.id;
+        const panel = e.target.closest(".action-panel");
+        const note = (panel.querySelector(".note-input")?.value || "").trim();
+
+        if (btn.dataset.sub === "cancel") {
+          card.querySelector(".action-slot").innerHTML = "";
+          return;
+        }
+        btn.disabled = true; btn.textContent = "Submitting…";
+
+        if (btn.dataset.sub === "improve-submit") {
+          if (!note) { alert("Please add a note."); btn.disabled = false; btn.textContent = "Submit Update"; return; }
+          await window.Portal.fbo.addImprovementUpdate(id, note);
+          const c = complaints.find((x) => x.complaintId === id);
+          if (c) { c.improvementUpdate = note; c.fboReviewed = "genuine"; c.status = "Under Review"; }
+        } else if (btn.dataset.sub === "flag-submit") {
+          await window.Portal.fbo.flagComplaint(id, note);
+          const c = complaints.find((x) => x.complaintId === id);
+          if (c) { c.flaggedByFBO = true; c.flagReason = note; c.status = "Under Review"; }
+        }
+
+        updateStats(); render();
+      }
+
+      qs("#feedbackList").addEventListener("click", (e) => {
+        onCardAction(e); onPanelAction(e);
+      });
+
+      /* ---------- Tab + date wiring ---------- */
+      qsa(".filter-row .filter").forEach((b) => {
+        b.addEventListener("click", () => {
+          qsa(".filter-row .filter").forEach((x) => x.classList.remove("active"));
+          b.classList.add("active");
+          activeFilter = b.dataset.filter;
+          render();
+        });
+      });
+      qsa(".date-row .date-chip").forEach((b) => {
+        b.addEventListener("click", () => {
+          qsa(".date-row .date-chip").forEach((x) => x.classList.remove("active"));
+          b.classList.add("active");
+          activeDays = b.dataset.days;
+          updateStats(); render();
+        });
+      });
+
+      /* ---------- LOGIN flow ---------- */
+      function showLoginErr(m) {
+        const el = qs("#fboLoginErr");
+        el.innerHTML = "⚠ " + m; el.classList.remove("hidden");
+      }
+      function hideLoginErr() { qs("#fboLoginErr").classList.add("hidden"); }
+      function showOtpErr(m) {
+        const el = qs("#fboOtpErr");
+        el.innerHTML = "⚠ " + m; el.classList.remove("hidden");
+      }
+      function hideOtpErr() { qs("#fboOtpErr").classList.add("hidden"); }
+
+      function setPicked(r) {
+        pickedRestaurant = r;
+        const badge = qs("#fboPicked");
+        if (r) {
+          badge.innerHTML = `✅ ${r.name} · 🛡 ${r.license} · 📍 ${r.location || ""}`;
+          badge.classList.remove("hidden");
+        } else {
+          badge.classList.add("hidden");
+        }
+      }
+
+      function suggest(query) {
+        const list = qs("#fboSuggest");
+        if (!query || query.length < 2) {
+          list.classList.add("hidden");
+          list.innerHTML = "";
+          return;
+        }
+        const q = query.toLowerCase();
+        const matches = restaurants
+          .filter(
+            (r) =>
+              (r.name || "").toLowerCase().includes(q) ||
+              (r.license || "").toLowerCase().includes(q)
+          )
+          .slice(0, 8);
+        if (!matches.length) {
+          list.innerHTML = '<div class="ac-empty">No matching restaurant.</div>';
+          list.classList.remove("hidden");
+          return;
+        }
+        list.innerHTML = matches
+          .map(
+            (r) => `
+            <div class="ac-item" data-id="${r.id}" data-license="${r.license}">
+              <div><strong>${r.name}</strong></div>
+              <div class="ac-sub">🛡 ${r.license} · 📍 ${r.location || ""}</div>
+            </div>`
+          )
+          .join("");
+        list.classList.remove("hidden");
+      }
+
+      qs("#fboQuery").addEventListener("input", (e) => {
+        const v = e.target.value.trim();
+        // If query is an exact license match, auto-pick
+        const exact = restaurants.find((r) => r.license === v);
+        if (exact) setPicked(exact);
+        else if (pickedRestaurant && v !== pickedRestaurant.name) setPicked(null);
+        suggest(v);
+      });
+
+      qs("#fboSuggest").addEventListener("click", (e) => {
+        const item = e.target.closest(".ac-item");
+        if (!item) return;
+        const r = restaurants.find((x) => x.license === item.dataset.license);
+        if (!r) return;
+        setPicked(r);
+        qs("#fboQuery").value = r.name;
+        qs("#fboSuggest").classList.add("hidden");
+      });
+
+      document.addEventListener("click", (e) => {
+        if (!e.target.closest(".autocomplete-wrap")) {
+          qs("#fboSuggest").classList.add("hidden");
+        }
+      });
+
+      qs("#fboSendOtp").addEventListener("click", () => {
+        hideLoginErr();
+        const q = qs("#fboQuery").value.trim();
+        const phone = qs("#fboPhone").value.trim();
+        // Resolve restaurant from picked OR exact license/name match
+        let r = pickedRestaurant;
+        if (!r) {
+          r = restaurants.find(
+            (x) =>
+              x.license === q ||
+              (x.name || "").toLowerCase() === q.toLowerCase()
+          );
+        }
+        if (!r) {
+          showLoginErr("Pick a restaurant from the suggestions list.");
+          return;
+        }
+        if (!/^\+?\d{10,13}$/.test(phone.replace(/\s|-/g, ""))) {
+          showLoginErr("Please enter a valid mobile number.");
+          return;
+        }
+        setPicked(r);
+        qs("#fboOtpPhone").textContent = phone;
+        qs("#loginStep").classList.add("hidden");
+        qs("#otpStep").classList.remove("hidden");
+      });
+
+      wireOtpBoxes("#fboOtpBoxes");
+      qs("#fboVerify").addEventListener("click", () => {
+        hideOtpErr();
+        const code = getOtpValue("#fboOtpBoxes");
+        if (code.length !== 6) {
+          showOtpErr("Please enter all 6 digits.");
+          return;
+        }
+        // Dummy verification: any 6 digits accepted
+        sessionStorage.setItem(FBO_LICENSE_KEY, pickedRestaurant.license);
+        sessionStorage.setItem(FBO_LOGIN_KEY, "1");
+        enterDashboard();
+      });
+
+      qs("#fboLoginBack").addEventListener("click", (e) => {
+        e.preventDefault();
+        qs("#otpStep").classList.add("hidden");
+        qs("#loginStep").classList.remove("hidden");
+      });
+
+      qs("#fboSignOut").addEventListener("click", () => {
+        if (unsubLive) { try { unsubLive(); } catch (_) {} unsubLive = null; }
+        sessionStorage.removeItem(FBO_LICENSE_KEY);
+        sessionStorage.removeItem(FBO_LOGIN_KEY);
+        location.reload();
+      });
+
+      function enterDashboard() {
+        qs("#otpStep").classList.add("hidden");
+        qs("#loginStep").classList.add("hidden");
+        qs("#dashboardStep").classList.remove("hidden");
+        const r = pickedRestaurant;
+        qs("#identityBadge").innerHTML =
+          `${r.name} · 🛡 ${r.license} · 📍 ${r.location || ""}`;
+
+        if (window.Portal && window.Portal.subscribeComplaintsForFbo) {
+          unsubLive = window.Portal.subscribeComplaintsForFbo(
+            { license: r.license },
+            (list) => {
+              complaints = Array.isArray(list) ? list : [];
+              updateStats(); render();
+            }
+          );
+        } else if (window.Portal && window.Portal.fetchComplaintsForFbo) {
+          window.Portal.fetchComplaintsForFbo({ license: r.license }).then((list) => {
+            complaints = Array.isArray(list) ? list : [];
+            updateStats(); render();
+          });
+        }
+      }
+
+      /* ---------- Bootstrap ---------- */
+      async function loadRestaurants() {
+        if (window.Portal && window.Portal.fetchRestaurants) {
+          const list = await window.Portal.fetchRestaurants();
+          if (list && list.length) return list;
+        }
+        return MOCK_RESTAURANTS;
+      }
+
+      async function boot() {
+        restaurants = await loadRestaurants();
+
+        // Auto-restore previous session
+        const cachedLic = sessionStorage.getItem(FBO_LICENSE_KEY);
+        const loggedIn = sessionStorage.getItem(FBO_LOGIN_KEY);
+        if (cachedLic && loggedIn) {
+          const r = restaurants.find((x) => x.license === cachedLic);
+          if (r) {
+            pickedRestaurant = r;
+            enterDashboard();
+            return;
+          }
+        }
+      }
+
+      if (window.Portal) boot();
+      else window.addEventListener("portal:ready", boot, { once: true });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Track Complaint | Consumer Grievance Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div id="navbar"></div>
+
+    <main class="container">
+      <h1 class="page-title">Complaint Status</h1>
+      <p class="subtitle">
+        Follow your complaint through its review lifecycle. You will be
+        notified when the status changes.
+      </p>
+
+      <div class="card" id="complaintCard">
+        <div class="card-row">
+          <div class="flex" style="gap: 14px; align-items: flex-start">
+            <span class="icon-circle lg" id="trkIconWrap"></span>
+            <div>
+              <h3 id="trkRestaurant">--</h3>
+              <div class="meta">
+                <span>📄</span> Complaint ID: <span id="trkId">--</span>
+              </div>
+              <div class="meta" style="margin-top: 4px">
+                <span>⏱</span> Filed: <span id="trkDate">--</span>
+              </div>
+              <div class="meta" style="margin-top: 4px" id="trkLocation"></div>
+              <div class="meta" style="margin-top: 4px" id="trkLicense"></div>
+            </div>
+          </div>
+          <div style="text-align: right">
+            <span class="rating-badge" id="trkRating"></span>
+            <div style="margin-top: 8px" id="trkStatus"></div>
+            <div id="trkFlag" style="margin-top: 6px"></div>
+          </div>
+        </div>
+
+        <div class="kv-grid">
+          <div class="kv">
+            <span class="icon-circle sage">🪪</span>
+            <div>
+              <div class="kv-label">Jurisdiction</div>
+              <div class="kv-value" id="trkJuris">Shillong, Meghalaya</div>
+            </div>
+          </div>
+          <div class="kv">
+            <span class="icon-circle amber">⏱</span>
+            <div>
+              <div class="kv-label">Expected Action</div>
+              <div class="kv-value">Within 7 days</div>
+            </div>
+          </div>
+        </div>
+
+        <hr class="divider-dashed" />
+        <p class="muted" id="trkComment" style="margin-top: 8px"></p>
+        <div id="trkNotices"></div>
+
+        <!-- Rating breakdown (shown when complaint has parameter ratings) -->
+        <div id="ratingBreakdown" class="kv-grid hidden">
+          <div class="kv">
+            <span class="icon-circle sage">🏢</span>
+            <div>
+              <div class="kv-label">Premise Cleanliness</div>
+              <div class="kv-value" id="ratCleanliness">—</div>
+            </div>
+          </div>
+          <div class="kv">
+            <span class="icon-circle amber">🍽</span>
+            <div>
+              <div class="kv-label">Food Freshness</div>
+              <div class="kv-value" id="ratFreshness">—</div>
+            </div>
+          </div>
+          <div class="kv">
+            <span class="icon-circle">🧤</span>
+            <div>
+              <div class="kv-label">Staff Hygiene</div>
+              <div class="kv-value" id="ratHygiene">—</div>
+            </div>
+          </div>
+        </div>
+
+        <h4 class="section-heading" style="margin-top: 22px; font-size: 16px">
+          <span>📈</span>
+          Progress Tracker
+        </h4>
+        <div class="timeline" id="trkTimeline"></div>
+      </div>
+
+      <!-- Assigned FSO -->
+      <div class="card" style="background: var(--cream)" id="fsoCard">
+        <h3>🏛 Assigned Food Safety Officer</h3>
+        <div class="flex" style="gap: 14px; align-items: flex-start; margin-top: 6px">
+          <span class="icon-circle sage">👮</span>
+          <div style="flex: 1">
+            <h4 id="fsoName" style="margin: 0 0 2px">—</h4>
+            <div class="meta" id="fsoDesig"></div>
+            <div class="meta" style="margin-top: 4px" id="fsoOffice"></div>
+            <div class="meta" style="margin-top: 4px" id="fsoJuris"></div>
+          </div>
+          <a class="btn" id="fsoCall" href="#">
+            <span>📞</span> Contact
+          </a>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap" style="gap: 10px">
+        <a href="dashboard.html" class="btn secondary">
+          <span>←</span> Back to Dashboard
+        </a>
+      </div>
+    </main>
+
+    <script src="/static/script.js"></script>
+    <script type="module" src="/static/firebase.js"></script>
+    <script>
+      qs("#navbar").innerHTML = renderNavbar("home");
+
+      function getParam(name) {
+        return new URLSearchParams(window.location.search).get(name);
+      }
+
+      function normalize(c) {
+        if (!c) return null;
+        if (c.complaintId) {
+          const createdAt = c.createdAt && c.createdAt.toDate
+            ? c.createdAt.toDate()
+            : new Date(c.createdAt || Date.now());
+          return {
+            id: c.complaintId,
+            restaurant: c.restaurantName || "",
+            restaurantLocation: c.restaurantLocation || "",
+            restaurantLicense: c.restaurantLicense || "",
+            rating: Number(c.overallRating) || 0,
+            ratings: {
+              cleanliness: c.rating_cleanliness,
+              freshness: c.rating_food_freshness,
+              hygiene: c.rating_staff_hygiene,
+            },
+            status: c.status || "Submitted",
+            date: createdAt.toISOString().slice(0, 10),
+            comment: c.comment || "",
+            improvementUpdate: c.improvementUpdate || "",
+            FSOAction: c.FSOAction || "",
+            officialNote: c.officialNote || "",
+            assignedFSO: c.assignedFSO || "",
+            flaggedByFBO: !!c.flaggedByFBO,
+            escalated: !!c.escalated,
+          };
+        }
+        return { flaggedByFBO: false, ratings: null, ...c };
+      }
+
+      function render(c) {
+        if (!c) {
+          qs("#complaintCard").innerHTML =
+            '<p class="muted">No complaint found for this ID.</p>';
+          qs("#fsoCard").classList.add("hidden");
+          return;
+        }
+        qs("#trkRestaurant").textContent = c.restaurant;
+        qs("#trkId").textContent = c.id;
+        qs("#trkDate").textContent = c.date;
+        qs("#trkRating").innerHTML = `<span>⭐</span> ${Number(c.rating).toFixed(1)} / 5`;
+        qs("#trkStatus").innerHTML = statusChip(c.status);
+        qs("#trkComment").textContent = c.comment || "";
+        if (c.restaurantLocation) {
+          qs("#trkLocation").innerHTML = `<span>📍</span> ${c.restaurantLocation}`;
+        }
+        if (c.restaurantLicense) {
+          qs("#trkLicense").innerHTML = `<span>🛡</span> FSSAI: ${c.restaurantLicense}`;
+        }
+        qs("#trkFlag").innerHTML = "";
+        if (c.flaggedByFBO) {
+          qs("#trkFlag").innerHTML =
+            '<span class="pill amber" style="font-size: 11px">🚨 Flagged — serious</span>';
+        } else if (c.escalated) {
+          qs("#trkFlag").innerHTML =
+            '<span class="pill amber" style="font-size: 11px">🔥 Escalated by FSO</span>';
+        }
+        const notices = qs("#trkNotices");
+        notices.innerHTML = "";
+        if (c.improvementUpdate) {
+          notices.insertAdjacentHTML(
+            "beforeend",
+            `<div class="notice sage" style="margin-top: 10px">
+               <span>📝</span> <strong>FBO improvement update:</strong> ${c.improvementUpdate}
+             </div>`
+          );
+        }
+        if (c.FSOAction) {
+          notices.insertAdjacentHTML(
+            "beforeend",
+            `<div class="notice navy" style="margin-top: 10px">
+               <span>🏛</span> <strong>FSO action:</strong> ${c.FSOAction}${
+              c.officialNote ? ` — "${c.officialNote}"` : ""
+            }
+             </div>`
+          );
+        }
+
+        if (c.ratings && (c.ratings.cleanliness || c.ratings.freshness || c.ratings.hygiene)) {
+          qs("#ratingBreakdown").classList.remove("hidden");
+          qs("#ratCleanliness").textContent = `${c.ratings.cleanliness || "—"} / 5`;
+          qs("#ratFreshness").textContent = `${c.ratings.freshness || "—"} / 5`;
+          qs("#ratHygiene").textContent = `${c.ratings.hygiene || "—"} / 5`;
+        }
+
+        const iconWrap = qs("#trkIconWrap");
+        if (c.status === "Action Taken") {
+          iconWrap.classList.add("sage");
+          iconWrap.textContent = "✅";
+        } else if (c.status === "Under Review") {
+          iconWrap.textContent = "🔎";
+        } else {
+          iconWrap.classList.add("amber");
+          iconWrap.textContent = "⏱";
+        }
+
+        const stages = [
+          { label: "Submitted", emoji: "📤", sub: "Filed by consumer" },
+          { label: "Under Review", emoji: "🔎", sub: "FSO investigating" },
+          { label: "Action Taken", emoji: "✅", sub: "Resolved" },
+        ];
+        const reached = {
+          Submitted: 1,
+          Pending: 1,
+          "Under Review": 2,
+          "Action Taken": 3,
+        }[c.status] || 1;
+
+        qs("#trkTimeline").innerHTML = stages
+          .map((s, idx) => {
+            let state = "";
+            if (idx < reached - 1) state = "done";
+            else if (idx === reached - 1)
+              state = c.status === "Action Taken" ? "done" : "current";
+            const dotContent =
+              state === "done"
+                ? '<span style="font-weight:700">✓</span>'
+                : state === "current"
+                ? s.emoji
+                : idx + 1;
+            return `
+              <div class="timeline-step ${state}">
+                <div class="dot">${dotContent}</div>
+                <div class="label">${s.label}</div>
+                <div class="sub-label">${s.sub}</div>
+              </div>`;
+          })
+          .join("");
+
+        // FSO card
+        const officer =
+          (c.assignedFSO &&
+            (typeof OFFICERS !== "undefined" &&
+              OFFICERS.find((o) => o.name === c.assignedFSO))) ||
+          (typeof findOfficerByArea === "function" &&
+            findOfficerByArea(c.restaurantLocation || c.restaurant)) ||
+          (typeof DEFAULT_OFFICER !== "undefined" ? DEFAULT_OFFICER : null);
+        if (officer) {
+          qs("#fsoName").textContent = officer.name;
+          qs("#fsoDesig").innerHTML = `<span>🪪</span> ${officer.designation}`;
+          qs("#fsoOffice").innerHTML = `<span>🏢</span> ${officer.office}`;
+          qs("#fsoJuris").innerHTML = `<span>📌</span> ${officer.jurisdiction}`;
+          qs("#fsoCall").href = `tel:${officer.contact.replace(/[^\d+]/g, "")}`;
+          qs("#trkJuris").textContent = officer.jurisdiction;
+        }
+      }
+
+      async function boot() {
+        const id = getParam("id");
+        // Instant paint from local cache for snappy first render
+        const local = Store.get("userComplaints", []);
+        const all = [...local, ...MOCK_COMPLAINTS];
+        const localMatch = id ? all.find((x) => x.id === id) : all[0];
+        if (localMatch) render(normalize(localMatch));
+
+        // Live subscription so FBO/FSO actions stream in immediately
+        const subscribe = () => {
+          if (!id) return;
+          if (window.Portal && window.Portal.subscribeComplaintById) {
+            window.Portal.subscribeComplaintById(id, (remote) => {
+              if (remote) render(normalize(remote));
+            });
+          } else if (window.Portal && window.Portal.fetchComplaintById) {
+            window.Portal.fetchComplaintById(id).then((remote) => {
+              if (remote) render(normalize(remote));
+            });
+          }
+        };
+
+        if (window.Portal) subscribe();
+        else window.addEventListener("portal:ready", subscribe, { once: true });
+      }
+      boot();
+    </script>
+  </body>
+</html>
